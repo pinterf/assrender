@@ -1,3 +1,9 @@
+lib/*/avisynth.lib
+
+CMakeCache.txt
+CMakeFiles/*
+cmake.db
+
 *.aps
 *.db
 *.opendb
@@ -5,6 +11,69 @@
 *.sdf
 *.suo
 *.user
-/bin
+#cmake generated files
+cmake_install.cmake
+cmake_uninstall.cmake
+generate.stamp
+generate.stamp.depend
+makefile
+
+#make
+install_manifest.txt
+
+SMP/
+
+#*/build/.vs
+*/build/Win32
+*/build/x64
+Test
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+[Rr]elWithDebInfo/
+x64/
+x86/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
 /msvc
-/obj
+# Visual C++ cache files
+ipch/
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.cachefile
+*.VC.db
+*.VC.VC.opendb
+*.VC.db-shm
+*.VC.db-wal
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+*.sap
+
+# Visual Studio 2015 cache/options directory
+.vs/
+# Uncomment if you have tasks that create the project's static files in wwwroot
+#wwwroot/
+
+# MSTest test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# NUNIT
+*.VisualState.xml
+TestResult.xml
+
+# Build Results of an ATL Project
+[Dd]ebugPS/
+[Rr]eleasePS/
+dlldata.c

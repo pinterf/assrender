@@ -66,13 +66,15 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
     udata* data;
     ASS_Track* ass;
 
-    if (!avs_is_rgb32(&fi->vi) && !avs_is_rgb24(&fi->vi) && !avs_is_yv12(&fi->vi) && !avs_is_yuv(&fi->vi)) {
+    /*
+    no unsupported colorspace left, bitness is checked at other place
+    if (0 == 1) {
         v = avs_new_value_error(
-                "AssRender: supported colorspaces: RGB32, RGB24, "
-                "YUY2, YV24, YV16, YV12, Y8");
+                "AssRender: unsupported colorspace");
         avs_release_clip(c);
         return v;
     }
+    */
 
     if (!f) {
         v = avs_new_value_error("AssRender: no input file specified");
@@ -175,7 +177,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
     }
 
     if (avs_is_rgb(&fi->vi)) {
-        data->color_matrix = col2rgb;
+      data->color_matrix = col2rgb;
     } else {
         if (!strcasecmp(tmpcsp, "bt.709") || !strcasecmp(tmpcsp, "rec709"))
             data->color_matrix = col2yuv709;
@@ -193,28 +195,93 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
         }
     }
 
+#ifdef FOR_AVISYNTH_26_ONLY
+    const int bits_per_pixel = 8;
+    const int pixelsize = 1;
+    const int greyscale = avs_is_y8(&fi->vi);
+#else
+    const int bits_per_pixel = avs_bits_per_component(&fi->vi);
+    const int pixelsize = avs_component_size(&fi->vi);
+    const int greyscale = avs_is_y(&fi->vi);
+#endif
+
+    if (bits_per_pixel == 8)
+      data->f_make_sub_img = make_sub_img;
+    else if(bits_per_pixel <= 16)
+      data->f_make_sub_img = make_sub_img16;
+    else {
+      v = avs_new_value_error("AssRender: unsupported bit depth: 32");
+      avs_release_clip(c);
+      return v;
+    }
+
+
     switch (fi->vi.pixel_type)
     {
-    case 0xA0000008:
+    case AVS_CS_YV12:
+    case AVS_CS_I420:
         data->apply = apply_yv12;
         break;
-    case 0xA0000308:
+    case AVS_CS_YUV420P10:
+    case AVS_CS_YUV420P12:
+    case AVS_CS_YUV420P14:
+    case AVS_CS_YUV420P16:
+        data->apply = apply_yuv420;
+        break;
+    case AVS_CS_YV16:
         data->apply = apply_yv16;
         break;
-    case 0xA000030B:
+    case AVS_CS_YUV422P10:
+    case AVS_CS_YUV422P12:
+    case AVS_CS_YUV422P14:
+    case AVS_CS_YUV422P16:
+        data->apply = apply_yuv422;
+        break;
+    case AVS_CS_YV24:
+    case AVS_CS_RGBP:
+    case AVS_CS_RGBAP:
         data->apply = apply_yv24;
         break;
-    case 0xE0000000:
+    case AVS_CS_YUV444P10:
+    case AVS_CS_YUV444P12:
+    case AVS_CS_YUV444P14:
+    case AVS_CS_YUV444P16:
+    case AVS_CS_RGBP10:
+    case AVS_CS_RGBP12:
+    case AVS_CS_RGBP14:
+    case AVS_CS_RGBP16:
+    case AVS_CS_RGBAP10:
+    case AVS_CS_RGBAP12:
+    case AVS_CS_RGBAP14:
+    case AVS_CS_RGBAP16:
+        data->apply = apply_yuv444;
+        break;
+    case AVS_CS_Y8:
         data->apply = apply_y8;
         break;
-    case 0x60000004:
+    case AVS_CS_Y10:
+    case AVS_CS_Y12:
+    case AVS_CS_Y14:
+    case AVS_CS_Y16:
+        data->apply = apply_y;
+        break;
+    case AVS_CS_YUY2:
         data->apply = apply_yuy2;
         break;
-    case 0x50000001:
+    case AVS_CS_BGR24:
         data->apply = apply_rgb;
         break;
-    case 0x50000002:
+    case AVS_CS_BGR32:
         data->apply = apply_rgba;
+        break;
+    case AVS_CS_BGR48:
+        data->apply = apply_rgb48;
+        break;
+    case AVS_CS_BGR64:
+        data->apply = apply_rgb64;
+        break;
+    case AVS_CS_YV411:
+        data->apply = apply_yv411;
         break;
     default:
         v = avs_new_value_error("AssRender: unsupported pixel type");
@@ -224,10 +291,17 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
 
     free(tmpcsp);
 
-    data->sub_img[0] = malloc(fi->vi.width * fi->vi.height);
-    data->sub_img[1] = malloc(fi->vi.width * fi->vi.height);
-    data->sub_img[2] = malloc(fi->vi.width * fi->vi.height);
-    data->sub_img[3] = malloc(fi->vi.width * fi->vi.height);
+    const int buffersize = fi->vi.width * fi->vi.height * pixelsize;
+
+    data->sub_img[0] = malloc(buffersize);
+    data->sub_img[1] = malloc(buffersize);
+    data->sub_img[2] = malloc(buffersize);
+    data->sub_img[3] = malloc(buffersize);
+
+    data->bits_per_pixel = bits_per_pixel;
+    data->pixelsize = pixelsize;
+    data->rgb_fullscale = avs_is_rgb(&fi->vi);
+    data->greyscale = greyscale;
 
     fi->user_data = data;
 
@@ -248,5 +322,5 @@ const char* AVSC_CC avisynth_c_plugin_init(AVS_ScriptEnvironment* env)
                      "[sar]f[top]i[bottom]i[left]i[right]i[charset]s"
                      "[debuglevel]i[fontdir]s[srt_font]s[colorspace]s",
                      assrender_create, 0);
-    return "AssRender 0.28: draws text subtitles better and faster than ever before";
+    return "AssRender 0.32: draws text subtitles better and faster than ever before";
 }

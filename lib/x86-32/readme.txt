@@ -1,0 +1,1 @@
+placeholder for 32 bit avisynth.lib from Avisynth C API SDK files
