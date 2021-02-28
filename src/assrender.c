@@ -179,9 +179,9 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
     if (avs_is_rgb(&fi->vi)) {
       data->color_matrix = col2rgb;
     } else {
-        if (!strcasecmp(tmpcsp, "bt.709") || !strcasecmp(tmpcsp, "rec709"))
+        if (!strcasecmp(tmpcsp, "TV.709") || !strcasecmp(tmpcsp, "bt.709") || !strcasecmp(tmpcsp, "rec709"))
             data->color_matrix = col2yuv709;
-        else if (!strcasecmp(tmpcsp, "bt.601") || !strcasecmp(tmpcsp, "rec601"))
+        else if (!strcasecmp(tmpcsp, "TV.601") || !strcasecmp(tmpcsp, "bt.601") || !strcasecmp(tmpcsp, "rec601"))
             data->color_matrix = col2yuv601;
         else if (!strcasecmp(tmpcsp, "bt.2020") || !strcasecmp(tmpcsp, "rec2020"))
             data->color_matrix = col2yuv2020;
