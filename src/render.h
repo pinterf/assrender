@@ -38,11 +38,17 @@ static void col2yuv601(uint32_t* c, uint8_t* y, uint8_t* u, uint8_t* v)
     *v = div65536(28784 * _r(*c) - 24103 * _g(*c) - 4681 * _b(*c)) + 128;
 }
 
+/*
+[ 0.1826,   0.6142,   0.0620]
+[-0.1006,  -0.3386,   0.4392]
+[ 0.4392,  -0.3989,  -0.0403]
+*/
+
 static void col2yuv709(uint32_t* c, uint8_t* y, uint8_t* u, uint8_t* v)
 {
     *y = div65536(11966 * _r(*c) + 40254 * _g(*c) + 4064 * _b(*c)) + 16;
     *u = div65536(-6596 * _r(*c) - 22189 * _g(*c) + 28784 * _b(*c)) + 128;
-    *v = div65536(28784 * _r(*c) - 26145 * _g(*c) - 2639 * _b(*c)) + 128;
+    *v = div65536(28784 * _r(*c) - 26142 * _g(*c) - 2639 * _b(*c)) + 128;
 }
 
 static void col2yuv2020(uint32_t* c, uint8_t* y, uint8_t* u, uint8_t* v)

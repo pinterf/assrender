@@ -61,7 +61,8 @@ The color space of your (YUV) video. Possible values:
  - Rec709, BT.709
  - Rec601, BT.601
  
-Default is to use the ASS script’s “Video Colorspace” property, else guess based on video resolution (width > 1920 or height > 1080 → BT.2020, then width > 1280 or height > 576 → BT.709).
+Default is to use the ASS script’s "YCbCr Matrix:" or "Video Colorspace" property, else guess based on video resolution (width > 1920 or height > 1080 → BT.2020, then width > 1280 or height > 576 → BT.709).
+Recognized .ASS properties: "tv.601" "tv.709". Other values like "pc.601" "pc.709" "tv.240m" "pc.240m" "tv.fcc" "pc.fcc" are treated as 'guess'.
 
 # Build instructions
 
@@ -174,6 +175,14 @@ Default is to use the ASS script’s “Video Colorspace” property, else guess
 * Avisynth wiki: http://avisynth.nl/index.php/AssRender
 
 # Change log
+## 0.34 (20210301 - pinterf)
+* Fix the fix: revert matrix change made in 0.33	
+* Fix: Check matrix from .ASS file "YCbCr Matrix:" section besides "Video Colorspace:"
+  Recognized values are "tv.601" and "tv.709"
+
+## 0.33 (20210228 - pinterf)
+* Fix: wrong Bt.709 matrix
+
 ## 0.32 (20210227 - pinterf)
 * Fix: treat I420 variant as YV12 instead of unsupported color space
 

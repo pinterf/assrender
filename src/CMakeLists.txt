@@ -36,8 +36,9 @@ endif()
 
 IF (NOT WIN32 OR MINGW)
   FIND_PACKAGE(PkgConfig REQUIRED)
+  PKG_CHECK_MODULES(AVISYNTH REQUIRED avisynth>=3.5.0)
   PKG_CHECK_MODULES(LIBASS REQUIRED libass>=0.12.0)
-  target_include_directories(${PluginName} PRIVATE ${LIBASS_INCLUDE_DIR})
+  target_include_directories(${PluginName} PRIVATE ${AVISYNTH_INCLUDE_DIR} ${LIBASS_INCLUDE_DIR})
 ENDIF()
 
 #dedicated include dir for avisynth.h
@@ -57,7 +58,7 @@ if (WIN32)
     TARGET_LINK_LIBRARIES(${ProjectName} ${AVS_LIBDIR}/avisynth.lib)
   endif()
 else()
-  TARGET_LINK_LIBRARIES(${ProjectName} ${LIBASS_LDFLAGS} )
+  TARGET_LINK_LIBRARIES(${ProjectName} ${AVISYNTH_LDFLAGS} ${LIBASS_LDFLAGS} )
 endif()
 
 include(GNUInstallDirs)

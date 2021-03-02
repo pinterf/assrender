@@ -1,6 +1,6 @@
 #include "sub.h"
 
-void ass_read_colorspace(const char* f, char* csp) {
+void ass_read_matrix(const char* f, char* csp) {
     char buf[BUFSIZ];
     FILE* fh = fopen(f, "r");
 
@@ -13,6 +13,9 @@ void ass_read_colorspace(const char* f, char* csp) {
 
         if (sscanf(buf, "YCbCr Matrix: %s", csp) == 1)
             break;
+
+        if (sscanf(buf, "Video Colorspace: %s", csp) == 1)
+          break;
 
         if (!strcmp(buf, "[Events]"))
             break;
