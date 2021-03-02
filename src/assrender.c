@@ -115,7 +115,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
         ass = parse_srt(f, data, srt_font);
     else {
         ass = ass_read_file(data->ass_library, (char*)f, (char*)cs);
-        ass_read_colorspace(f, tmpcsp);
+        ass_read_matrix(f, tmpcsp);
     }
 
     if (!ass) {
@@ -179,13 +179,22 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
     if (avs_is_rgb(&fi->vi)) {
       data->color_matrix = col2rgb;
     } else {
-        if (!strcasecmp(tmpcsp, "TV.709") || !strcasecmp(tmpcsp, "bt.709") || !strcasecmp(tmpcsp, "rec709"))
+        // .ASS "YCbCr Matrix" valid values are
+        // "none" "tv.601" "pc.601" "tv.709" "pc.709" "tv.240m" "pc.240m" "tv.fcc" "pc.fcc"
+        if (!strcasecmp(tmpcsp, "bt.709") || !strcasecmp(tmpcsp, "rec709") || !strcasecmp(tmpcsp, "tv.709"))
             data->color_matrix = col2yuv709;
-        else if (!strcasecmp(tmpcsp, "TV.601") || !strcasecmp(tmpcsp, "bt.601") || !strcasecmp(tmpcsp, "rec601"))
+        else if (!strcasecmp(tmpcsp, "bt.601") || !strcasecmp(tmpcsp, "rec601") || !strcasecmp(tmpcsp, "tv.601"))
             data->color_matrix = col2yuv601;
         else if (!strcasecmp(tmpcsp, "bt.2020") || !strcasecmp(tmpcsp, "rec2020"))
             data->color_matrix = col2yuv2020;
-        else data->color_matrix = col2yuv601;
+        else {
+            if (fi->vi.width > 1920 || fi->vi.height > 1080)
+                data->color_matrix = col2yuv2020;
+            else if (fi->vi.width > 1280 || fi->vi.height > 576)
+                data->color_matrix = col2yuv709;
+            else
+                data->color_matrix = col2yuv601;
+        }
     }
 
 #ifdef FOR_AVISYNTH_26_ONLY
@@ -315,5 +324,5 @@ const char* AVSC_CC avisynth_c_plugin_init(AVS_ScriptEnvironment* env)
                      "[sar]f[top]i[bottom]i[left]i[right]i[charset]s"
                      "[debuglevel]i[fontdir]s[srt_font]s[colorspace]s",
                      assrender_create, 0);
-    return "AssRender 0.32: draws text subtitles better and faster than ever before";
+    return "AssRender: draws text subtitles better and faster than ever before";
 }
