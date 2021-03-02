@@ -187,14 +187,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
             data->color_matrix = col2yuv601;
         else if (!strcasecmp(tmpcsp, "bt.2020") || !strcasecmp(tmpcsp, "rec2020"))
             data->color_matrix = col2yuv2020;
-        else {
-            if (fi->vi.width > 1920 || fi->vi.height > 1080)
-                data->color_matrix = col2yuv2020;
-            else if (fi->vi.width > 1280 || fi->vi.height > 576)
-                data->color_matrix = col2yuv709;
-            else
-                data->color_matrix = col2yuv601;
-        }
+        else data->color_matrix = col2yuv601;
     }
 
 #ifdef FOR_AVISYNTH_26_ONLY
