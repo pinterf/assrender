@@ -15,19 +15,20 @@
 
 #define blend(srcA, srcC, dstC) \
     ((div255(srcA * srcC + (255 - srcA) * dstC)))
-#define blend2(src1A, src1C, src2A, src2C, dstC) \
+#define blend2A(src1A, src1C, src2A, src2C, dstC) \
     ((div255(((src1A * src1C + src2A * src2C + (510 - src1A - src2A) * dstC + 1) >> 1))))
-#define blend4(src1A, src1C, src2A, src2C, src3A, src3C, src4A, src4C, dstC) \
+#define blend4A(src1A, src1C, src2A, src2C, src3A, src3C, src4A, src4C, dstC) \
     ((div255(((src1A * src1C + src2A * src2C + src3A * src3C + src4A * src4C + (1020 - src1A - src2A - src3A - src4A) * dstC + 2) >> 2))))
-#define scale(srcA, srcC, dstC) \
+#define scaleA(srcA, srcC, dstC) \
     ((srcA * srcC + (255 - srcA) * dstC))
 #define dblend(srcA, srcC, dstA, dstC, outA) \
     (((srcA * srcC * 255 + dstA * dstC * (255 - srcA) + (outA >> 1)) / outA))
 
-void FillMatrix(ConversionMatrix* matrix, matrix_type mt);
 
-void make_sub_img(ASS_Image* img, uint8_t** sub_img, uint32_t width, int bits_per_pixel, int rgb, ConversionMatrix *mx);
-void make_sub_img16(ASS_Image* img, uint8_t** sub_img, uint32_t width, int bits_per_pixel, int rgb, ConversionMatrix* mx);
+void FillMatrix(ConversionMatrixA* matrix, matrix_type mt);
+
+void make_sub_img(ASS_Image* img, uint8_t** sub_img, uint32_t width, int bits_per_pixel, int rgb, ConversionMatrixA *mx);
+void make_sub_img16(ASS_Image* img, uint8_t** sub_img, uint32_t width, int bits_per_pixel, int rgb, ConversionMatrixA* mx);
 
 void apply_rgba(uint8_t** sub_img, uint8_t** data, uint32_t* pitch, uint32_t width, uint32_t height);
 void apply_rgb(uint8_t** sub_img, uint8_t** data, uint32_t* pitch, uint32_t width, uint32_t height);
@@ -44,6 +45,7 @@ void apply_yuv444(uint8_t** sub_img, uint8_t** data, uint32_t* pitch, uint32_t w
 void apply_y(uint8_t** sub_img, uint8_t** data, uint32_t* pitch, uint32_t width, uint32_t height);
 void apply_yv411(uint8_t** sub_img, uint8_t** data, uint32_t* pitch, uint32_t width, uint32_t height);
 
-AVS_VideoFrame* AVSC_CC assrender_get_frame(AVS_FilterInfo* p, int n);
+//AVS_VideoFrame* AVSC_CC assrender_get_frame(AVS_FilterInfo* p, int n);
+//PVideoFrame __stdcall GetFrame(int n, IScriptEnvironment* env);
 
 #endif
