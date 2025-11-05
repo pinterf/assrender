@@ -35,7 +35,7 @@ int parse_timecodesv1(FILE* f, int total, udata* ud)
     }
 
     if (basefps == 0.0) {
-        _aligned_free(ts);
+        free(ts);
         return 0;
     }
 
@@ -67,7 +67,7 @@ int parse_timecodesv2(FILE* f, int total, udata* ud)
     }
 
     if (n < total) {
-        _aligned_free(ts);
+        free(ts);
         return 0;
     }
 
