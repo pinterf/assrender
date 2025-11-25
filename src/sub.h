@@ -1,7 +1,7 @@
 #ifndef _SUB_H_
 #define _SUB_H_
 
-#include <fontconfig/fontconfig.h>
+// #include <fontconfig/fontconfig.h>
 #include "assrender.h"
 
 void ass_read_matrix(const char* f, char* csp);

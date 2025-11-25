@@ -5,9 +5,6 @@ on:
   pull_request:
   workflow_dispatch: #
 
-env:
-  ass_ver: 0.17.4
-
 jobs:
   build-linux:
     runs-on: ubuntu-latest
@@ -42,8 +39,17 @@ jobs:
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
-      - name: set msbuild
-        uses: ilammy/msvc-dev-cmd@v1
+      - name: Pull submodules
+        run: |
+          git submodule update --init --recursive
+          mkdir avsplus
+      # - name: Install MSYS2 with dependencies
+      #   uses: msys2/setup-msys2@v2
+      #   with:
+      #     update: true
+      #     install: base-devel git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-libass
+      #     msystem: MINGW64
+      #     path-type: inherit
       - name: Parse AviSynth+ release metadata
         uses: actions/github-script@v7
         with:
@@ -67,39 +73,39 @@ jobs:
             core.exportVariable('PACKAGE_URL', link);
       - name: Download AviSynth+ latest release
         run: curl -L "${{ env.PACKAGE_URL }}" --create-dirs -o "./avsplus/avisynthplus-latest-filesonly.7z"
-      - name: get libs and set env
+      - name: Move libs files
         run: |
+          7z e "avsplus\*-filesonly.7z" -o"lib\x86-32" "*\x86\c_api\AviSynth.lib"
           7z e "avsplus\*-filesonly.7z" -o"lib\x86-64" "*\x64\c_api\AviSynth.lib"
-          
-          choco install ninja nasm pkgconfiglite
-          
-          python -m pip install --upgrade pip
-          pip install meson
-          
-          $env:PKG_CONFIG_PATH = "C:/lib/pkgconfig"
-          Add-Content -Path $env:GITHUB_ENV -Value "PKG_CONFIG_PATH=$env:PKG_CONFIG_PATH"
-          
-          git clone https://github.com/libass/libass.git -b ${{ env.ass_ver }} --depth=1 libass
-          
-          cd ./libass
-          meson wrap update-db
-          meson wrap install fribidi
-          meson wrap install freetype2
-          meson wrap install expat
-          meson wrap install harfbuzz
-          meson wrap install libpng
-          meson wrap install zlib
-          
-          meson -Ddefault_library=static -Dbuildtype=release -Dasm=enabled -Db_vscrt=static_from_buildtype -Dc_std=c11 -Dcpp_std=c++17 build
-          meson compile -C build
-          meson install -C build
-      - name: Build DLL
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
+      - name: Prepare NASM
+        uses: ilammy/setup-nasm@v1
+      - name: Setup VSYASM and VSNASM
         run: |
-          cmake -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -A x64 -S . -B build
-          msbuild /t:Rebuild /m /p:Configuration=Release /p:Platform=x64 .\build\assrender.sln
-      - name: Save DLL
+          git clone https://github.com/ShiftMediaProject/VSYASM.git
+          .\VSYASM\install_script.bat
+          git clone https://github.com/ShiftMediaProject/VSNASM.git
+          .\VSNASM\install_script.bat
+      - name: Build binaries
+        shell: cmd
         run: |
-          cmake -E copy "build\src\Release\assrender.dll" "dist\Release_x64\assrender.dll"
+          set NASMPATH=%USERPROFILE%\nasm\
+          MSBuild.exe /t:Rebuild /p:PlatformToolset=v143 /m /p:Configuration=Release /p:Platform=x86
+          MSBuild.exe /t:Rebuild /p:PlatformToolset=v143 /m /p:Configuration=Release /p:Platform=x64
+      # - name: Build MINGW64 binary
+      #   shell: msys2 {0}
+      #   run: |
+      #     cmake -G "MinGW Makefiles" -B build -S .
+      #     cmake --build build --config Release --clean-first
+      - name: Copy x86 binary
+        run: cmake -E copy "bin\Release_Win32\assrender.dll" "dist\Release_x86\assrender.dll"
+      - name: Copy x64 binary
+        run: cmake -E copy "bin\Release_x64\assrender.dll" "dist\Release_x64\assrender.dll"
+      # - name: Copy MINGW64 binary
+      #   run: cmake -E copy "build\src\assrender.dll" "dist\Release_MINGW64\assrender.dll"
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

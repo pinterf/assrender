@@ -3,6 +3,106 @@
 #include "sub.h"
 #include "timecodes.h"
 
+static char* read_file_bytes(FILE* fp, size_t* bufsize)
+{
+    int res;
+    long sz;
+    long bytes_read;
+    char* buf;
+    res = fseek(fp, 0, SEEK_END);
+    if (res == -1) {
+        fclose(fp);
+        return 0;
+    }
+
+    sz = ftell(fp);
+    rewind(fp);
+
+    buf = sz < SIZE_MAX ? malloc(sz + 1) : NULL;
+    if (!buf) {
+        fclose(fp);
+        return NULL;
+    }
+    bytes_read = 0;
+    do {
+        res = fread(buf + bytes_read, 1, sz - bytes_read, fp);
+        if (res <= 0) {
+            fclose(fp);
+            free(buf);
+            return 0;
+        }
+        bytes_read += res;
+    } while (sz - bytes_read > 0);
+    buf[sz] = '\0';
+    fclose(fp);
+
+    if (bufsize)
+        *bufsize = sz;
+    return buf;
+}
+
+static const char* detect_bom(const char* buf, const size_t bufsize) {
+    if (bufsize >= 4) {
+        if (!strncmp(buf, "\xef\xbb\xbf", 3))
+            return "UTF-8";
+        if (!strncmp(buf, "\x00\x00\xfe\xff", 4))
+            return "UTF-32BE";
+        if (!strncmp(buf, "\xff\xfe\x00\x00", 4))
+            return "UTF-32LE";
+        if (!strncmp(buf, "\xfe\xff", 2))
+            return "UTF-16BE";
+        if (!strncmp(buf, "\xff\xfe", 2))
+            return "UTF-16LE";
+    }
+    return "UTF-8";
+}
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#else
+#include <sys/stat.h>
+#endif
+
+#ifdef _WIN32
+static wchar_t *utf8_to_utf16le(const char *data) {
+    const int out_size = MultiByteToWideChar(CP_UTF8, 0, data, -1, NULL, 0);
+    wchar_t *out = malloc(out_size * sizeof(wchar_t));
+    MultiByteToWideChar(CP_UTF8, 0, data, -1, out, out_size);
+    return out;
+}
+#endif
+
+bool file_exists(const char *path) {
+#ifdef _WIN32
+    wchar_t *path_utf16le = utf8_to_utf16le(path);
+    DWORD dwAttrib = GetFileAttributesW(path_utf16le);
+    free(path_utf16le);
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+#else
+    struct stat path_stat;
+    if (stat(path, &path_stat) != 0) {
+        return false;
+    }
+    return S_ISREG(path_stat.st_mode);
+#endif
+}
+
+static FILE* open_utf8_filename(const char* f, const char* m)
+{
+    if (!file_exists(f)) return NULL;
+#ifdef _WIN32
+    wchar_t* file_name = utf8_to_utf16le(f);
+    wchar_t* mode = utf8_to_utf16le(m);
+    FILE* fp = _wfopen(file_name, mode);
+    free(file_name);
+    free(mode);
+    return fp;
+#else
+    return fopen(f, m);
+#endif
+}
+
 void AVSC_CC assrender_destroy(void* ud, AVS_ScriptEnvironment* env)
 {
     ass_renderer_done(((udata*)ud)->ass_renderer);
@@ -48,8 +148,8 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
                avs_as_int(avs_array_elt(args, 10)) : 0;
     int right = avs_is_int(avs_array_elt(args, 11)) ?
                 avs_as_int(avs_array_elt(args, 11)) : 0;
-    const char* cs = avs_as_string(avs_array_elt(args, 12)) ?
-                     avs_as_string(avs_array_elt(args, 12)) : "UTF-8";
+    /* Allow charset auto-detection via BOM if omitted */
+    const char* cs = avs_as_string(avs_array_elt(args, 12));
     int debuglevel = avs_is_int(avs_array_elt(args, 13)) ?
                      avs_as_int(avs_array_elt(args, 13)) : 0;
     const char* fontdir = avs_as_string(avs_array_elt(args, 14)) ?
@@ -69,6 +169,8 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
     ASS_Hinting hinting;
     udata* data;
     ASS_Track* ass;
+
+    FILE* fp;
 
     /*
     no unsupported colorspace left, bitness is checked at other place
@@ -115,11 +217,47 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
         return v;
     }
 
-    if (!strcasecmp(strrchr(f, '.'), ".srt"))
-        ass = parse_srt(f, data, srt_font);
-    else {
-        ass = ass_read_file(data->ass_library, (char*)f, (char*)cs);
-        ass_read_matrix(f, tmpcsp);
+    /* Improved Unicode / BOM / file validation loading logic */
+    if (!strcasecmp(strrchr(f, '.'), ".srt")) {
+        FILE* fp = open_utf8_filename(f, "r");
+        if (!fp) {
+            sprintf(e, "AssRender: input file '%s' does not exist or is not a regular file", f);
+            v = avs_new_value_error(e);
+            avs_release_clip(c);
+            return v;
+        }
+        ass = parse_srt(fp, data, srt_font);
+    } else {
+        size_t bufsize = 0;
+        char* buf;
+
+        fp = open_utf8_filename(f, "rb");
+        if (!fp) {
+            sprintf(e, "AssRender: input file '%s' does not exist or is not a regular file", f);
+            v = avs_new_value_error(e);
+            avs_release_clip(c);
+            return v;
+        }
+
+        buf = read_file_bytes(fp, &bufsize);
+        if (!buf) {
+            sprintf(e, "AssRender: unable to read '%s'", f);
+            v = avs_new_value_error(e);
+            avs_release_clip(c);
+            return v;
+        }
+
+        if (cs == NULL)
+            cs = detect_bom(buf, bufsize);
+
+        ass = ass_read_memory(data->ass_library, buf, bufsize, (char*)cs);
+        free(buf);
+
+        fp = open_utf8_filename(f, "r");
+        if (fp) {
+            ass_read_matrix(fp, tmpcsp);
+            fclose(fp);
+        }
     }
 
     if (!ass) {
@@ -133,7 +271,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
 
     if (vfr) {
         int ver;
-        FILE* fh = fopen(vfr, "r");
+        FILE* fh = open_utf8_filename(vfr, "r");
 
         if (!fh) {
             sprintf(e, "AssRender: could not read timecodes file '%s'", vfr);

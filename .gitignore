@@ -11,6 +11,8 @@ cmake.db
 *.sdf
 *.suo
 *.user
+*.wrap
+wrapdb.json
 #cmake generated files
 cmake_install.cmake
 cmake_uninstall.cmake
@@ -25,8 +27,11 @@ avsplus/
 SMP/
 VSNASM/
 VSYASM/
+libass*
+testbuild.bat
 
 #*/build/.vs
+build/*
 */build/Win32
 */build/x64
 Test

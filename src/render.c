@@ -17,7 +17,7 @@ static void BuildMatrix(ConversionMatrix* matrix, double Kr, double Kb, int shif
   const int cmax = full_scale ? max_pixel_value : (240 << (bits_per_pixel - 8));
   Suv = (cmax - cmin) / 2;
 
-  const double mulfac = (double)(1ULL << shift); // integer aritmetic precision scale
+  const double mulfac = (double)(1ULL << shift); // integer arithmetic precision scale
 
   const double Kg = 1. - Kr - Kb;
 
@@ -920,7 +920,7 @@ AVS_VideoFrame* AVSC_CC assrender_get_frame(AVS_FilterInfo* p, int n)
             data[0] = avs_get_write_ptr_p(src, AVS_PLANAR_R);
             data[1] = avs_get_write_ptr_p(src, AVS_PLANAR_G);
             data[2] = avs_get_write_ptr_p(src, AVS_PLANAR_B);
-            pitch[0] = avs_get_pitch(src); 
+            pitch[0] = avs_get_pitch_p(src, AVS_DEFAULT_PLANE);
           }
           else {
             data[0] = avs_get_write_ptr_p(src, AVS_PLANAR_Y);
@@ -931,8 +931,8 @@ AVS_VideoFrame* AVSC_CC assrender_get_frame(AVS_FilterInfo* p, int n)
           }
         }
         else {
-          data[0] = avs_get_write_ptr(src);
-          pitch[0] = avs_get_pitch(src);
+          data[0] = avs_get_write_ptr_p(src, AVS_DEFAULT_PLANE);
+          pitch[0] = avs_get_pitch_p(src, AVS_DEFAULT_PLANE);
         }
 
         height = p->vi.height;
