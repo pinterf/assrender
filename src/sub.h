@@ -4,9 +4,9 @@
 // #include <fontconfig/fontconfig.h>
 #include "assrender.h"
 
-void ass_read_matrix(const char* f, char* csp);
+void ass_read_matrix(FILE* fh, char* csp);
 
-ASS_Track* parse_srt(const char* f, udata* ud, const char* srt_font);
+ASS_Track* parse_srt(FILE* fh, udata* ud, const char* srt_font);
 
 int init_ass(int w, int h, double scale, double line_spacing,
              ASS_Hinting hinting, double dar, double sar, int top,
