@@ -88,7 +88,7 @@ void msg_callback(int level, const char* fmt, va_list va, void* data)
 }
 
 int init_ass(int w, int h, double scale, double line_spacing, ASS_Hinting hinting,
-             double dar, double sar,
+             int frame_width, int frame_height, double dar, double sar, bool set_default_storage_size,
              int top, int bottom, int left, int right, int verbosity,
              const char* fontdir, udata* ud)
 {
@@ -109,16 +109,41 @@ int init_ass(int w, int h, double scale, double line_spacing, ASS_Hinting hintin
 
     ass_set_font_scale(ass_renderer, scale);
     ass_set_hinting(ass_renderer, hinting);
-    ass_set_frame_size(ass_renderer, w, h);
-    ass_set_storage_size(ass_renderer, w, h);
     ass_set_margins(ass_renderer, top, bottom, left, right);
     ass_set_use_margins(ass_renderer, 1);
 
     if (line_spacing)
         ass_set_line_spacing(ass_renderer, line_spacing);
 
-    if (dar && sar)
-        ass_set_pixel_aspect(ass_renderer, dar / sar);
+    if (frame_width > 0 && frame_height > 0) {
+        ass_set_frame_size(ass_renderer, frame_width, frame_height);
+        ass_set_storage_size(ass_renderer, w, h);
+    }
+    else if (dar > 0.0 || sar > 0.0) {
+        ass_set_frame_size(ass_renderer, w, h);
+
+        double par = 1.0;
+        if (dar > 0.0 && sar > 0.0) {
+            par = dar / sar;
+        }
+        else if (dar > 0.0) {
+            par = dar * (double)h / (double)w;
+        }
+        else if (sar > 0.0) {
+            par = sar;
+        }
+
+        ass_set_pixel_aspect(ass_renderer, par);
+        if (set_default_storage_size) {
+            ass_set_storage_size(ass_renderer, w, h);
+        }
+    }
+    else {
+        ass_set_frame_size(ass_renderer, w, h);
+        if (set_default_storage_size) {
+            ass_set_storage_size(ass_renderer, w, h);
+        }
+    }
 
     if (strcmp(fontdir, ""))
         ass_set_fonts_dir(ass_library, fontdir);

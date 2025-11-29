@@ -130,38 +130,44 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
 
     const char* f = avs_as_string(avs_array_elt(args, 1));
     const char* vfr = avs_as_string(avs_array_elt(args, 2));
-    int h = avs_is_int(avs_array_elt(args, 3)) ?
+    int hint = avs_is_int(avs_array_elt(args, 3)) ?
             avs_as_int(avs_array_elt(args, 3)) : 0;
     double scale = avs_is_float(avs_array_elt(args, 4)) ?
                    avs_as_float(avs_array_elt(args, 4)) : 1.0;
     double line_spacing = avs_is_float(avs_array_elt(args, 5)) ?
                           avs_as_float(avs_array_elt(args, 5)) : 0;
-    double dar = avs_is_float(avs_array_elt(args, 6)) ?
-                 avs_as_float(avs_array_elt(args, 6)) : 0;
-    double sar = avs_is_float(avs_array_elt(args, 7)) ?
-                 avs_as_float(avs_array_elt(args, 7)) : 0;
-    int top = avs_is_int(avs_array_elt(args, 8)) ?
-              avs_as_int(avs_array_elt(args, 8)) : 0;
-    int bottom = avs_is_int(avs_array_elt(args, 9)) ?
-                 avs_as_int(avs_array_elt(args, 9)) : 0;
-    int left = avs_is_int(avs_array_elt(args, 10)) ?
-               avs_as_int(avs_array_elt(args, 10)) : 0;
-    int right = avs_is_int(avs_array_elt(args, 11)) ?
-                avs_as_int(avs_array_elt(args, 11)) : 0;
+    int frame_width = avs_is_int(avs_array_elt(args, 6)) ?
+                      avs_as_int(avs_array_elt(args, 6)) : 0;
+    int frame_height = avs_is_int(avs_array_elt(args, 7)) ?
+                       avs_as_int(avs_array_elt(args, 7)) : 0;
+    double dar = avs_is_float(avs_array_elt(args, 8)) ?
+                 avs_as_float(avs_array_elt(args, 8)) : 0;
+    double sar = avs_is_float(avs_array_elt(args, 9)) ?
+                 avs_as_float(avs_array_elt(args, 9)) : 0;
+    bool defstorage = avs_as_bool(avs_array_elt(args, 10)) ?
+                      avs_as_bool(avs_array_elt(args, 10)) : false;
+    int top = avs_is_int(avs_array_elt(args, 11)) ?
+              avs_as_int(avs_array_elt(args, 11)) : 0;
+    int bottom = avs_is_int(avs_array_elt(args, 12)) ?
+                 avs_as_int(avs_array_elt(args, 12)) : 0;
+    int left = avs_is_int(avs_array_elt(args, 13)) ?
+               avs_as_int(avs_array_elt(args, 13)) : 0;
+    int right = avs_is_int(avs_array_elt(args, 14)) ?
+                avs_as_int(avs_array_elt(args, 14)) : 0;
     /* Allow charset auto-detection via BOM if omitted */
-    const char* cs = avs_as_string(avs_array_elt(args, 12));
-    int debuglevel = avs_is_int(avs_array_elt(args, 13)) ?
-                     avs_as_int(avs_array_elt(args, 13)) : 0;
-    const char* fontdir = avs_as_string(avs_array_elt(args, 14)) ?
+    const char* cs = avs_as_string(avs_array_elt(args, 15));
+    int debuglevel = avs_is_int(avs_array_elt(args, 16)) ?
+                     avs_as_int(avs_array_elt(args, 16)) : 0;
+    const char* fontdir = avs_as_string(avs_array_elt(args, 17)) ?
 #ifdef AVS_WINDOWS
-        avs_as_string(avs_array_elt(args, 14)) : "C:/Windows/Fonts";
+        avs_as_string(avs_array_elt(args, 17)) : "C:/Windows/Fonts";
 #else
-        avs_as_string(avs_array_elt(args, 14)) : "/usr/share/fonts";
+        avs_as_string(avs_array_elt(args, 17)) : "/usr/share/fonts";
 #endif
-    const char* srt_font = avs_as_string(avs_array_elt(args, 15)) ?
-                           avs_as_string(avs_array_elt(args, 15)) : "sans-serif";
-    const char* colorspace = avs_as_string(avs_array_elt(args, 16)) ?
-                             avs_as_string(avs_array_elt(args, 16)) : "";
+    const char* srt_font = avs_as_string(avs_array_elt(args, 18)) ?
+                           avs_as_string(avs_array_elt(args, 18)) : "sans-serif";
+    const char* colorspace = avs_as_string(avs_array_elt(args, 19)) ?
+                             avs_as_string(avs_array_elt(args, 19)) : "";
 
     char* tmpcsp = calloc(1, BUFSIZ);
     strncpy(tmpcsp, colorspace, BUFSIZ - 1);
@@ -188,7 +194,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
         return v;
     }
 
-    switch (h) {
+    switch (hint) {
     case 0:
         hinting = ASS_HINTING_NONE;
         break;
@@ -209,9 +215,10 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
 
     data = malloc(sizeof(udata));
 
-    if (!init_ass(fi->vi.width, fi->vi.height, scale, line_spacing,
-                  hinting, dar, sar, top, bottom, left, right,
-                  debuglevel, fontdir, data)) {
+    if (!init_ass(fi->vi.width, fi->vi.height, scale, line_spacing, hinting,
+                  frame_width, frame_height, dar, sar, defstorage,
+                  top, bottom, left, right, debuglevel,
+                  fontdir, data)) {
         v = avs_new_value_error("AssRender: failed to initialize");
         avs_release_clip(c);
         return v;
@@ -494,9 +501,25 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
 const char* AVSC_CC avisynth_c_plugin_init(AVS_ScriptEnvironment* env)
 {
     avs_add_function(env, "assrender",
-                     "c[file]s[vfr]s[hinting]i[scale]f[line_spacing]f[dar]f"
-                     "[sar]f[top]i[bottom]i[left]i[right]i[charset]s"
-                     "[debuglevel]i[fontdir]s[srt_font]s[colorspace]s",
+                     "c[file]s"
+                     "[vfr]s"
+                     "[hinting]i"
+                     "[scale]f"
+                     "[line_spacing]f"
+                     "[frame_width]i"
+                     "[frame_height]i"
+                     "[dar]f"
+                     "[sar]f"
+                     "[set_default_storage_size]b"
+                     "[top]i"
+                     "[bottom]i"
+                     "[left]i"
+                     "[right]i"
+                     "[charset]s"
+                     "[debuglevel]i"
+                     "[fontdir]s"
+                     "[srt_font]s"
+                     "[colorspace]s",
                      assrender_create, 0);
     return "AssRender: draws text subtitles better and faster than ever before";
 }
