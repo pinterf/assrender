@@ -1,5 +1,10 @@
 ## Change log
 
+### dev
+* switch build system to meson
+* unicode-safe file reading
+* Add frame size parameters
+
 ### 0.35 (20210304)
 * Windows MSVC: Update to libass v0.15
   (git submodule update --init --recursive --remote)

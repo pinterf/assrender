@@ -131,7 +131,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
     const char* f = avs_as_string(avs_array_elt(args, 1));
     const char* vfr = avs_as_string(avs_array_elt(args, 2));
     int hint = avs_is_int(avs_array_elt(args, 3)) ?
-            avs_as_int(avs_array_elt(args, 3)) : 0;
+               avs_as_int(avs_array_elt(args, 3)) : 0;
     double scale = avs_is_float(avs_array_elt(args, 4)) ?
                    avs_as_float(avs_array_elt(args, 4)) : 1.0;
     double line_spacing = avs_is_float(avs_array_elt(args, 5)) ?
