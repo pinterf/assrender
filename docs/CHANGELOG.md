@@ -1,7 +1,7 @@
 ## Change log
 
 ### 0.36.0-dev.1 (20251201)
-* Switch build system to meson (only x64 available)
+* Switch submodule build system to meson (only x64 available)
 * Update avisynth(plus) headers to v12
 * Unicode-safe file reading
 * Add frame size parameters
