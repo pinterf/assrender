@@ -1,10 +1,12 @@
 ## Change log
 
-### dev
-* Switch build system to meson
+### 0.36.0-dev.1 (20251201)
+* Switch build system to meson (only x64 available)
 * Update avisynth(plus) headers to v12
 * Unicode-safe file reading
 * Add frame size parameters
+* Add set_default_storage_size boolean
+* Update libass to 0.17.4
 
 ### 0.35 (20210304)
 * Windows MSVC: Update to libass v0.15
