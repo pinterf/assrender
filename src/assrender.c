@@ -145,7 +145,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
     double sar = avs_is_float(avs_array_elt(args, 9)) ?
                  avs_as_float(avs_array_elt(args, 9)) : 0;
     bool defstorage = avs_as_bool(avs_array_elt(args, 10)) ?
-                      avs_as_bool(avs_array_elt(args, 10)) : false;
+                      avs_as_bool(avs_array_elt(args, 10)) : true;
     int top = avs_is_int(avs_array_elt(args, 11)) ?
               avs_as_int(avs_array_elt(args, 11)) : 0;
     int bottom = avs_is_int(avs_array_elt(args, 12)) ?
