@@ -1,4 +1,5 @@
 lib/*/avisynth.lib
+*.7z
 
 CMakeCache.txt
 CMakeFiles/*

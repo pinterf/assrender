@@ -6,8 +6,11 @@ on:
   workflow_dispatch: #
 
 env:
+  ass_repo: https://github.com/libass/libass
   ass_ver: 0.17.4
-  avs_ver: v3.7.5
+  avs_repo: https://github.com/AviSynth/AviSynthPlus
+  avs_ver: 3.7.5
+  avs_date: 20250420
 
 jobs:
   build-linux:
@@ -19,14 +22,15 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y ninja-build nasm libfontconfig1-dev meson
           
-          git clone https://github.com/AviSynth/AviSynthPlus.git -b ${{ env.avs_ver }} --depth=1 avsplus
+          git clone ${{ env.avs_repo }}.git -b v${{ env.avs_ver }} --depth=1 avsplus
           
           cd ./avsplus
-          cmake -S . -B avisynth-build
+          cmake -DCMAKE_INSTALL_PREFIX=/usr/local -S . -B avisynth-build 
           cmake --build avisynth-build --config Release -j 2
+          sudo cmake --install avisynth-build --config Release
           cd ..
           
-          git clone https://github.com/libass/libass.git -b ${{ env.ass_ver }} --depth=1 libass
+          git clone ${{ env.ass_repo }}.git -b ${{ env.ass_ver }} --depth=1 libass
           
           cd ./libass
           meson wrap update-db
@@ -68,14 +72,10 @@ jobs:
           $env:PKG_CONFIG_PATH = "C:/lib/pkgconfig"
           Add-Content -Path $env:GITHUB_ENV -Value "PKG_CONFIG_PATH=$env:PKG_CONFIG_PATH"
           
-          git clone https://github.com/AviSynth/AviSynthPlus.git -b ${{ env.avs_ver }} --depth=1 avsplus
+          curl -L "${{ env.avs_repo }}/releases/download/v${{ env.avs_ver }}/AviSynthPlus_${{ env.avs_ver }}_${{ env.avs_date }}-filesonly.7z" --create-dirs -o "./avsplus/avisynthplus-latest-filesonly.7z"
+          7z e "avsplus\*-filesonly.7z" -o"lib\x86-64" "*\x64\c_api\AviSynth.lib"
           
-          cd ./avsplus
-          cmake -A x64 -S . -B avisynth-build
-          cmake --build avisynth-build --config Release -j 2
-          cd ..
-          
-          git clone https://github.com/libass/libass.git -b ${{ env.ass_ver }} --depth=1 libass
+          git clone ${{ env.ass_repo }}.git -b ${{ env.ass_ver }} --depth=1 libass
           
           cd ./libass
           meson wrap update-db
