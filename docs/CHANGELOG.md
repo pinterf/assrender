@@ -1,8 +1,8 @@
 ## Change log
 
 ### dev
-* switch build system to meson
-* unicode-safe file reading
+* Switch build system to meson
+* Unicode-safe file reading
 * Add frame size parameters
 
 ### 0.35 (20210304)

@@ -11,6 +11,10 @@ file(GLOB ASSRender_SRC *.c)
 
 if(WIN32)
   list(APPEND ASSRender_SRC "ASSRender.rc")
+  if(NOT MINGW AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+      # 32 bit VS only: decoration remove for old Avisynth 2.6
+      LIST(APPEND ASSRender_SRC "assrender.def")
+  endif()
 endif()
 
 add_library(${PluginName} SHARED ${ASSRender_SRC})
@@ -39,7 +43,11 @@ target_link_libraries(${ProjectName} ${LIBASS_LINK_LIBRARIES})
 
 if (WIN32)
   # avisynth.lib for C API
-  set(AVS_LIBDIR ${CMAKE_CURRENT_SOURCE_DIR}/../lib/x86-64)
+  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(AVS_LIBDIR ${CMAKE_CURRENT_SOURCE_DIR}/../lib/x86-64)
+  else()
+    set(AVS_LIBDIR ${CMAKE_CURRENT_SOURCE_DIR}/../lib/x86-32)
+  endif()
   if (MINGW)
     target_link_libraries(${ProjectName} ${LIBASS_LDFLAGS} ${AVS_LIBDIR}/avisynth.lib)
   else()
