@@ -2,6 +2,7 @@
 
 ### dev
 * Switch build system to meson
+* Update avisynth(plus) headers to v12
 * Unicode-safe file reading
 * Add frame size parameters
 
