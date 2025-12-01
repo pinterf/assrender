@@ -1,7 +1,10 @@
 ## Change log
 
+### 0.36.0-dev.2 (20251201)
+* Restore x86-32 assrender.dll build
+
 ### 0.36.0-dev.1 (20251201)
-* Switch submodule build system to meson (only x64 available)
+* Switch submodule build system to meson
 * Update avisynth(plus) headers to v12
 * Unicode-safe file reading
 * Add frame size parameters
