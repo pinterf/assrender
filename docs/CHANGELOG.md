@@ -1,5 +1,8 @@
 ## Change log
 
+### Next
+* Use frame properties if they available for "YCbCr Matrix: None"
+
 ### 0.36.0-dev.2 (20251201)
 * Restore x86-32 assrender.dll build
 

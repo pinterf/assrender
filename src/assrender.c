@@ -120,12 +120,102 @@ void AVSC_CC assrender_destroy(void* ud, AVS_ScriptEnvironment* env)
     free(ud);
 }
 
+static matrix_type matrix_from_frame_props(
+    AVS_ScriptEnvironment *env,
+    AVS_Clip              *clip,
+    const AVS_VideoInfo   *vi,
+    int                   *ok_out)
+{
+    *ok_out = 0;
+
+    if (!avs_has_video(vi) || !avs_is_yuv(vi))
+        return MATRIX_NONE;
+
+    AVS_VideoFrame *frame = avs_get_frame(clip, 0);
+    if (!frame)
+        return MATRIX_NONE;
+
+    int err;
+    const AVS_Map *props = avs_get_frame_props_ro(env, frame);
+    if (!props) {
+        avs_release_video_frame(frame);
+        return MATRIX_NONE;
+    }
+
+    // _Matrix: ITU-T H.265 Table E.5 / AviSynth+ AVS_MATRIX_* index
+    int matrix = avs_prop_get_int(env, props, "_Matrix", 0, &err);
+    if (err) {
+        avs_release_video_frame(frame);
+        return MATRIX_NONE;
+    }
+
+    // _ColorRange: 0 = full (PC), 1 = limited (TV) :contentReference[oaicite:1]{index=1}
+    int range = avs_prop_get_int(env, props, "_ColorRange", 0, &err);
+    if (err)
+        range = 1; // default to TV/limited for YUV if not present
+
+    avs_release_video_frame(frame);
+
+    const int full = (range == 0);
+
+    /*
+     * _Matrix values (H.265 / AviSynth+):
+     *   0: RGB
+     *   1: BT.709
+     *   2: unspecified
+     *   4: FCC (BT.470M)
+     *   5: BT.470BG / Rec.601
+     *   6: ST.170M (also 601)
+     *   7: ST.240M
+     *   9: BT.2020 (non-constant luminance)
+     *  10: BT.2020 (constant luminance)
+     *  (others ignored here)
+     */
+
+    matrix_type mt = MATRIX_NONE;
+
+    switch (matrix) {
+    case 1: // BT.709
+        mt = full ? MATRIX_PC709  : MATRIX_BT709;
+        break;
+
+    case 5: // BT.470BG / Rec.601
+    case 6: // ST.170M (treated as 601)
+        mt = full ? MATRIX_PC601  : MATRIX_BT601;
+        break;
+
+    case 4: // FCC
+        mt = full ? MATRIX_PCFCC  : MATRIX_TVFCC;
+        break;
+
+    case 7: // 240M
+        mt = full ? MATRIX_PC240M : MATRIX_TV240M;
+        break;
+
+    case 9: // BT.2020 (ncl)
+    case 10:// BT.2020 (cl)
+        mt = full ? MATRIX_PC2020 : MATRIX_BT2020;
+        break;
+
+    default:
+        // 0 (RGB), 2 (unspec), 8 (YCgCo), 12/13/14… → we don’t trust it
+        mt = MATRIX_NONE;
+        break;
+    }
+
+    if (mt != MATRIX_NONE)
+        *ok_out = 1;
+
+    return mt;
+}
+
 AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
                                    void* ud)
 {
     AVS_Value v;
     AVS_FilterInfo* fi;
     AVS_Clip* c = avs_new_c_filter(env, &fi, avs_array_elt(args, 0), 1);
+    const AVS_VideoInfo *vi = &fi->vi;
     char e[250];
 
     const char* f = avs_as_string(avs_array_elt(args, 1));
@@ -366,10 +456,23 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
           color_mt = MATRIX_BT2020;
         else 
         */
-        if (fi->vi.width > 1280 || fi->vi.height > 576)
-          color_mt = MATRIX_PC709;
-        else
-          color_mt = MATRIX_PC601;
+
+        int mt_from_props_ok = 0;
+        matrix_type mt_from_props = MATRIX_NONE;
+
+        if (avs_get_version(c) >= 9) {
+            mt_from_props = matrix_from_frame_props(env, c, vi, &mt_from_props_ok);
+        }
+
+        if (mt_from_props_ok && mt_from_props != MATRIX_NONE) {
+            color_mt = mt_from_props;
+        } else {
+            if (vi->width >= 1280 || vi->height >= 576) {
+                color_mt = MATRIX_PC709;
+            } else {
+                color_mt = MATRIX_PC601;
+            }
+        }
       }
       else {
         color_mt = MATRIX_BT601;
