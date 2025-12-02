@@ -149,7 +149,7 @@ static matrix_type matrix_from_frame_props(
         return MATRIX_NONE;
     }
 
-    // _ColorRange: 0 = full (PC), 1 = limited (TV) :contentReference[oaicite:1]{index=1}
+    // _ColorRange: 0 = full (PC), 1 = limited (TV)
     int range = avs_prop_get_int(env, props, "_ColorRange", 0, &err);
     if (err)
         range = 1; // default to TV/limited for YUV if not present

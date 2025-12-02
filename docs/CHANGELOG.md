@@ -1,6 +1,6 @@
 ## Change log
 
-### Next
+### 0.36.0-dev.3 (20251202)
 * Use frame properties if they available for "YCbCr Matrix: None"
 
 ### 0.36.0-dev.2 (20251201)
