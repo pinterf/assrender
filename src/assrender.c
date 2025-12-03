@@ -450,13 +450,6 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
         color_mt = MATRIX_BT2020;
       }
       else if (!strcasecmp(tmpcsp, "none") || !strcasecmp(tmpcsp, "guess")) {
-        /* not yet
-        * Theoretically only for 10 and 12 bits:
-        if (fi->vi.width > 1920 || fi->vi.height > 1080)
-          color_mt = MATRIX_BT2020;
-        else 
-        */
-
         int mt_from_props_ok = 0;
         matrix_type mt_from_props = MATRIX_NONE;
 
@@ -467,10 +460,16 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
         if (mt_from_props_ok && mt_from_props != MATRIX_NONE) {
             color_mt = mt_from_props;
         } else {
-            if (vi->width >= 1280 || vi->height >= 576) {
-                color_mt = MATRIX_PC709;
+            /* not yet
+            * Theoretically only for 10 and 12 bits:
+            if (fi->vi.width > 1920 || fi->vi.height > 1080)
+            color_mt = MATRIX_BT2020;
+            else
+            */
+            if (vi->width > 1024 || vi->height > 576) {
+                color_mt = MATRIX_BT709;
             } else {
-                color_mt = MATRIX_PC601;
+                color_mt = MATRIX_BT601;
             }
         }
       }
@@ -500,7 +499,6 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
       avs_release_clip(c);
       return v;
     }
-
 
     switch (fi->vi.pixel_type)
     {
