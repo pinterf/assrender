@@ -3,8 +3,11 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include <inttypes.h>
 #include <math.h>
 #include <string.h>
+#include <time.h>
 #include <ass/ass.h>
 #include "avs/config.h"
 #ifdef AVS_WINDOWS

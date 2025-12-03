@@ -1,5 +1,19 @@
 ## Change log
 
+### 0.36.0-dev.3 (20251202)
+* Use frame properties if they available for "YCbCr Matrix: None"
+
+### 0.36.0-dev.2 (20251201)
+* Restore x86-32 assrender.dll build
+
+### 0.36.0-dev.1 (20251201)
+* Switch submodule build system to meson
+* Update avisynth(plus) headers to v12
+* Unicode-safe file reading
+* Add frame size parameters
+* Add set_default_storage_size boolean
+* Update libass to 0.17.4
+
 ### 0.35 (20210304)
 * Windows MSVC: Update to libass v0.15
   (git submodule update --init --recursive --remote)

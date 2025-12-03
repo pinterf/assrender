@@ -5,101 +5,136 @@ on:
   pull_request:
   workflow_dispatch: #
 
+env:
+  ass_repo: https://github.com/libass/libass
+  ass_ver: 0.17.4
+  avs_repo: https://github.com/AviSynth/AviSynthPlus
+  avs_ver: 3.7.5
+  avs_date: 20250420
+
 jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install cmake git ninja-build checkinstall
-          sudo apt-get install -y --no-install-recommends build-essential g++ gcc libass-dev pkg-config
-          git clone https://github.com/AviSynth/AviSynthPlus avsplus
-          cd avsplus
-          cmake -G "Ninja" -B avisynth-build -S .
-          cd avisynth-build
-          ninja
-          sudo checkinstall --pkgname=avisynth --pkgversion="$(grep -r Version avs_core/avisynth.pc | cut -f2 -d " ")-$(date --rfc-3339=date | sed 's/-//g')-git" --backup=no --deldoc=yes --delspec=yes --deldesc=yes --strip=yes --stripso=yes --addso=yes --fstrans=no --default ninja install
-      - name: Build binary
+          sudo apt-get update && sudo apt-get install -y ninja-build nasm libfontconfig1-dev meson
+          
+          git clone ${{ env.avs_repo }}.git -b v${{ env.avs_ver }} --depth=1 avsplus
+          
+          cd ./avsplus
+          cmake -DCMAKE_INSTALL_PREFIX=/usr/local -S . -B avisynth-build 
+          cmake --build avisynth-build --config Release -j 2
+          sudo cmake --install avisynth-build --config Release
+          cd ..
+          
+          git clone ${{ env.ass_repo }}.git -b ${{ env.ass_ver }} --depth=1 libass
+          
+          cd ./libass
+          meson wrap update-db
+          meson wrap install fribidi
+          meson wrap install freetype2
+          meson wrap install expat
+          meson wrap install harfbuzz
+          meson wrap install libpng
+          meson wrap install zlib
+          
+          meson setup build -Ddefault_library=static -Dbuildtype=release -Dasm=enabled -Dc_std=c11 -Dcpp_std=c++17
+          meson compile -C build
+          sudo meson install -C build
+      - name: Build & Save binary
         run: |
           cmake -B build -S .
           cmake --build build --clean-first
-      - name: Copy binary
-        run: cmake -E copy "build/src/libassrender.so" "dist/libassrender.so"
+          cmake -E copy "build/src/libassrender.so" "dist/libassrender.so"
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: assrender_bin_linux
           path: dist
 
   build-win:
-    runs-on: windows-2019
+    runs-on: windows-latest
     steps:
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install dependencies
         run: |
-          git submodule update --init --recursive
-          git clone https://github.com/ShiftMediaProject/VSYASM.git
-          .\VSYASM\install_script.bat
-          git clone https://github.com/ShiftMediaProject/VSNASM.git
-          .\VSNASM\install_script.bat
-          md avsplus
-      # - name: Install MSYS2 with dependencies
-      #   uses: msys2/setup-msys2@v2
-      #   with:
-      #     update: true
-      #     install: base-devel git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-libass
-      #     msystem: MINGW64
-      #     path-type: inherit
-      - name: Parse AviSynth+ release metadata
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const req = await github.request('https://api.github.com/repos/avisynth/avisynthplus/releases');
-            const data = req.data;
-            let link = '';
-            for(let rel of data){
-                if(rel.prerelease||rel.draft){
-                    continue;
-                }
-                for(let asset of rel.assets){
-                    if(asset.name.match(/-filesonly.7z$/i)){
-                        link = asset.browser_download_url;
-                    }
-                }
-                if(link != ''){
-                    break;
-                }
-            }
-            core.exportVariable('PACKAGE_URL', link);
-      - name: Download AviSynth+ latest release
-        run: curl -L "${{ env.PACKAGE_URL }}" -o "./avsplus/avisynthplus-latest-filesonly.7z"
-      - name: Move libs files
-        run: |
+          choco install ninja nasm pkgconfiglite
+          
+          python -m pip install --upgrade pip
+          pip install meson
+          
+          curl -L "${{ env.avs_repo }}/releases/download/v${{ env.avs_ver }}/AviSynthPlus_${{ env.avs_ver }}_${{ env.avs_date }}-filesonly.7z" `
+            --create-dirs -o "./avsplus/avisynthplus-latest-filesonly.7z"
           7z e "avsplus\*-filesonly.7z" -o"lib\x86-32" "*\x86\c_api\AviSynth.lib"
           7z e "avsplus\*-filesonly.7z" -o"lib\x86-64" "*\x64\c_api\AviSynth.lib"
-      - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v1
-      - name: Build x86 binary
-        run: MSBuild.exe /t:Rebuild /p:PlatformToolset=v142 /m /p:Configuration=Release /p:Platform=x86
-      - name: Build x64 binary
-        run: MSBuild.exe /t:Rebuild /p:PlatformToolset=v142 /m /p:Configuration=Release /p:Platform=x64
-      # - name: Build MINGW64 binary
-      #   shell: msys2 {0}
-      #   run: |
-      #     cmake -G "MinGW Makefiles" -B build -S .
-      #     cmake --build build --config Release --clean-first
-      - name: Copy x86 binary
-        run: cmake -E copy "bin\Release_Win32\assrender.dll" "dist\Release_x86\assrender.dll"
-      - name: Copy x64 binary
-        run: cmake -E copy "bin\Release_x64\assrender.dll" "dist\Release_x64\assrender.dll"
-      # - name: Copy MINGW64 binary
-      #   run: cmake -E copy "build\src\assrender.dll" "dist\Release_MINGW64\assrender.dll"
+          
+          git clone ${{ env.ass_repo }}.git -b ${{ env.ass_ver }} --depth=1 libass
+          
+          cd ./libass
+          meson wrap update-db
+          meson wrap install fribidi
+          meson wrap install fontconfig
+          meson wrap install freetype2
+          meson wrap install expat
+          meson wrap install harfbuzz
+          meson wrap install libpng
+          meson wrap install zlib
+      - name: Setup MSVC (x64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - name: Meson + CMake build (x64)
+        env:
+          PKG_CONFIG_PATH: C:/assdeps/x64/lib/pkgconfig
+        run: |
+          cd libass
+          meson setup build_x64 `
+            --prefix "C:/assdeps/x64" `
+            --libdir "lib" `
+            -Ddefault_library=static `
+            -Dbuildtype=release `
+            -Dasm=enabled `
+            -Db_vscrt=static_from_buildtype `
+            -Dc_std=c11 `
+            -Dcpp_std=c++17
+          meson compile -C build_x64
+          meson install -C build_x64
+          cd ..
+          
+          cmake -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -A x64 -S . -B build_x64
+          msbuild /t:Rebuild /m /p:Configuration=Release /p:Platform=x64 ".\build_x64\assrender.sln"
+          cmake -E copy "build_x64\src\Release\assrender.dll" "dist\Release_x64\assrender.dll"
+      - name: Setup MSVC (Win32)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
+      - name: Meson + CMake build (Win32)
+        env:
+          PKG_CONFIG_PATH: C:/assdeps/x86/lib/pkgconfig
+        run: |
+          cd libass
+          meson setup build_Win32 `
+            --prefix "C:/assdeps/x86" `
+            --libdir "lib" `
+            -Ddefault_library=static `
+            -Dbuildtype=release `
+            -Dasm=enabled `
+            -Db_vscrt=static_from_buildtype `
+            -Dc_std=c11 `
+            -Dcpp_std=c++17
+          meson compile -C build_Win32
+          meson install -C build_Win32
+          cd ..
+          
+          cmake -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -A Win32 -S . -B build_Win32
+          msbuild /t:Rebuild /m /p:Configuration=Release /p:Platform=Win32 ".\build_Win32\assrender.sln"
+          cmake -E copy "build_Win32\src\Release\assrender.dll" "dist\Release_Win32\assrender.dll"
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: assrender_bin_win
           path: dist

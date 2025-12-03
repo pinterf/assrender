@@ -1,112 +1,46 @@
 ## Build instructions
 
-### Windows Visual Studio 2019
+### Windows
 
-* Prequisite: vsnasm integration
-  - get VSNASM from https://github.com/ShiftMediaProject/VSNASM
-  - run install_script.bat
+* Prequisite: install nasm, ninja, pkg-config-lite and meson
+  - `winget install Ninja-build.Ninja NASM.NASM bloodrock.pkg-config-lite mesonbuild.meson`
+  - set PKG_CONFIG_PATH env `setx PKG_CONFIG_PATH "C:/lib/pkgconfig"`
 
-* Clone repo
-
-  Clone https://github.com/pinterf/assrender from VS IDE or 
-
-      git clone https://github.com/pinterf/assrender
-      git submodule update --init --recursive --remote
+* Clone repos
+  - Clone `git clone https://github.com/seiya-dev/assrender.git`
+  - and clone libass as subdirectory `cd assrender && git clone https://github.com/libass/libass.git`
 
 * Prequisite: avisynth.lib versions (x86 and x64)
   - When you have installed Avisynth through an installer and have installed FilterSDK  
     get it from c:\Program Files (x86)\AviSynth+\FilterSDK\lib\x86 and x64
   - Or get it from the 'filesonly' builds at Avisynth+ releases
-	  https://github.com/AviSynth/AviSynthPlus/releases
-
-  Copy lib files  to assrender\lib\x86-64\ and assrender\lib\x86-32\ 
-  32 and 64 bit versions respectively
+    https://github.com/AviSynth/AviSynthPlus/releases
+  - Copy lib files to assrender\lib\x86-64\ and assrender\lib\x86-32\
+    32 and 64 bit versions respectively
 
 * Build:
-  Open solution file from IDE
-
-### Windows GCC (mingw installed by msys2)
-
-* Clone repo
-
-      git clone https://github.com/pinterf/assrender
-        
-  This environment is not using the git submodules, we need libass as a package.
-  There is no need for submodule update.
-
-* Prequisite: avisynth.lib versions (x86 and x64)
-  - When you have installed Avisynth through an installer and have installed FilterSDK  
-    get it from c:\Program Files (x86)\AviSynth+\FilterSDK\lib\x86 and x64
-  - Or get it from the 'filesonly' builds at [Avisynth+ releases](https://github.com/AviSynth/AviSynthPlus/releases)
-
-  Copy lib files  to assrender\lib\x86-64\ and assrender\lib\x86-32\ 
-  32 and 64 bit versions respectively
-
-* Prequisite: libass package
-
-  - List libass versions
-
-        $ pacman -Ss libass
-
-    Output:
-
-        mingw32/mingw-w64-i686-libass 0.16.0-1
-        A portable library for SSA/ASS subtitles rendering (mingw-w64)
-        mingw64/mingw-w64-x86_64-libass 0.16.0-1
-        A portable library for SSA/ASS subtitles rendering (mingw-w64)
-
-  - Get package
-
-    Example for x64 version:
-  
-        $ pacman -S mingw64/mingw-w64-x86_64-libass
-
-    Output:
-
-          resolving dependencies...
-          looking for conflicting packages...
-          warning: dependency cycle detected:
-          warning: mingw-w64-x86_64-harfbuzz will be installed before its mingw-w64-x86_64-freetype dependency
-
-          Packages (10) mingw-w64-x86_64-fontconfig-2.13.93-1
-                      mingw-w64-x86_64-freetype-2.10.4-1
-                      mingw-w64-x86_64-fribidi-1.0.10-2
-                      mingw-w64-x86_64-glib2-2.66.4-1
-                      mingw-w64-x86_64-graphite2-1.3.14-2
-                      mingw-w64-x86_64-harfbuzz-2.7.4-1
-                      mingw-w64-x86_64-libpng-1.6.37-3  mingw-w64-x86_64-pcre-8.44-2
-                      mingw-w64-x86_64-wineditline-2.205-3
-                      mingw-w64-x86_64-libass-0.15.0-1
-
-          Total Download Size:    6.92 MiB
-          Total Installed Size:  42.31 MiB
-
-          :: Proceed with installation? [Y/n]
-
-     Choose Y and wait
-
-* Build
-  under project root:
-
-      rm -r build
-      cmake -G "MinGW Makefiles" -B build -S .
-      cmake --build build --config Release --clean-first
+  - run command `call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"`
+  - go to `libass` folder and run `meson wrap update-db && meson wrap install fribidi && meson wrap install freetype2 && meson wrap install expat && meson wrap install harfbuzz && meson wrap install libpng && meson wrap install zlib`
+  - run `meson setup build -Ddefault_library=static -Dbuildtype=release -Dasm=enabled -Db_vscrt=static_from_buildtype -Dc_std=c11 -Dcpp_std=c++17`
+  - run `meson compile -C build`
+  - run `meson install -C build`
+  - back to assrender folder and run ...
+  - run `cmake -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -A x64 -S . -B build`
+  - run `msbuild /t:Rebuild /m /p:Configuration=Release /p:Platform=x64 .\build\assrender.sln`
 
 ### Linux
 * Clone repo
+  - git clone https://github.com/seiya-dev/assrender
+  - cd assrender
+  - cmake -B build -S .
+  - cmake --build build --clean-first
 
-      git clone https://github.com/pinterf/assrender
-      cd assrender
-      cmake -B build -S .
-      cmake --build build --clean-first
-  
-  Remark: submodules are not needed, libass is used as a package.
+* Remark:
+  - submodules are not needed, libass is used as a package.
 
 * Find binaries at
-    
-      build/assrender/libassrender.so
+   - build/assrender/libassrender.so
 
 * Install binaries
-
-      cd build
-      sudo make install
+  - cd build
+  - sudo make install
