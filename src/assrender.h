@@ -9,42 +9,50 @@
 #include <string.h>
 #include <time.h>
 #include <ass/ass.h>
+
+#ifdef _WIN32
+#    define WIN32_LEAN_AND_MEAN
+#    include <windows.h>
+#else
+#    include <sys/stat.h>
+#endif
+
 #include "avs/config.h"
 #ifdef AVS_WINDOWS
-#include "avisynth_c.h"
+#    include "avisynth_c.h"
 #else
-#include <avisynth/avisynth_c.h>
+#    include <avisynth/avisynth_c.h>
 #endif
 
 #if defined(_MSC_VER)
-#define __NO_ISOCEXT
-#define __NO_INLINE__
+#    define __NO_ISOCEXT
+#    define __NO_INLINE__
 
-#define strcasecmp _stricmp
-#define atoll _atoi64
+#    define strcasecmp _stricmp
+#    define atoll _atoi64
 #endif
 
 typedef struct {
-  // premultiplied coefficients for integer scaled arithmetics
-  int y_r, y_g, y_b;
-  int u_r, u_g, u_b;
-  int v_r, v_g, v_b;
-  int offset_y;
-  bool valid;
+    // premultiplied coefficients for integer scaled arithmetics
+    int y_r, y_g, y_b;
+    int u_r, u_g, u_b;
+    int v_r, v_g, v_b;
+    int offset_y;
+    bool valid;
 } ConversionMatrix;
 
 typedef enum {
-  MATRIX_NONE = 0,
-  MATRIX_BT601,
-  MATRIX_PC601,
-  MATRIX_BT709,
-  MATRIX_PC709,
-  MATRIX_PC2020,
-  MATRIX_BT2020,
-  MATRIX_TVFCC,
-  MATRIX_PCFCC,
-  MATRIX_TV240M,
-  MATRIX_PC240M
+    MATRIX_NONE = 0,
+    MATRIX_BT601,
+    MATRIX_PC601,
+    MATRIX_BT709,
+    MATRIX_PC709,
+    MATRIX_PC2020,
+    MATRIX_BT2020,
+    MATRIX_TVFCC,
+    MATRIX_PCFCC,
+    MATRIX_TV240M,
+    MATRIX_PC240M
 } matrix_type;
 
 typedef void (* fPixel)(uint8_t** sub_img, uint8_t** data, uint32_t* pitch, uint32_t width, uint32_t height);

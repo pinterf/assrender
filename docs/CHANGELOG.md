@@ -1,6 +1,8 @@
 ## Change log
 
-### 0.36.0-dev.4 (20251205)
+### 0.36.0-dev.5 (20251209)
+* Fix hinting
+* Fix ass_set_storage_size not be called
 * Switch submodule build system to meson
 * Update avisynth(plus) headers to v12
 * Update libass to 0.17.4
@@ -8,6 +10,7 @@
 * Add frame size parameters
 * Add set_default_storage_size boolean
 * Use frame properties if they available for "YCbCr Matrix: None"
+* Work with frame copy instead of just modifying it
 
 ### 0.35 (20210304)
 * Windows MSVC: Update to libass v0.15
@@ -21,7 +24,7 @@
 * Fix: possible crash on initializing phase (buffer overread, linux crashed, Windows was just lucky)
 
 ### 0.34 (20210301)
-* Fix the fix: revert matrix change made in 0.33	
+* Fix the fix: revert matrix change made in 0.33
 * Fix: Check matrix from .ASS file "YCbCr Matrix:" section besides "Video Colorspace:"
   Recognized values are "tv.601" and "tv.709"
 

@@ -58,13 +58,6 @@ static const char* detect_bom(const char* buf, const size_t bufsize) {
 }
 
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#else
-#include <sys/stat.h>
-#endif
-
-#ifdef _WIN32
 static wchar_t *utf8_to_utf16le(const char *data) {
     const int out_size = MultiByteToWideChar(CP_UTF8, 0, data, -1, NULL, 0);
     wchar_t *out = malloc(out_size * sizeof(wchar_t));
@@ -216,7 +209,6 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
     AVS_FilterInfo* fi;
     AVS_Clip* c = avs_new_c_filter(env, &fi, avs_array_elt(args, 0), 1);
     const AVS_VideoInfo *vi = &fi->vi;
-    char e[250];
 
     const char* f = avs_as_string(avs_array_elt(args, 1));
     const char* vfr = avs_as_string(avs_array_elt(args, 2));
@@ -318,7 +310,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
     if (!strcasecmp(strrchr(f, '.'), ".srt")) {
         FILE* fp = open_utf8_filename(f, "r");
         if (!fp) {
-            sprintf(e, "AssRender: input file '%s' does not exist or is not a regular file", f);
+            const char* e = avs_sprintf(env, "AssRender: input file '%s' does not exist or is not a regular file", f);
             v = avs_new_value_error(e);
             avs_release_clip(c);
             return v;
@@ -330,7 +322,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
 
         fp = open_utf8_filename(f, "rb");
         if (!fp) {
-            sprintf(e, "AssRender: input file '%s' does not exist or is not a regular file", f);
+            const char* e = avs_sprintf(env, "AssRender: input file '%s' does not exist or is not a regular file", f);
             v = avs_new_value_error(e);
             avs_release_clip(c);
             return v;
@@ -338,7 +330,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
 
         buf = read_file_bytes(fp, &bufsize);
         if (!buf) {
-            sprintf(e, "AssRender: unable to read '%s'", f);
+            const char* e = avs_sprintf(env, "AssRender: unable to read '%s'", f);
             v = avs_new_value_error(e);
             avs_release_clip(c);
             return v;
@@ -358,7 +350,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
     }
 
     if (!ass) {
-        sprintf(e, "AssRender: unable to parse '%s'", f);
+        const char* e = avs_sprintf(env, "AssRender: unable to parse '%s'", f);
         v = avs_new_value_error(e);
         avs_release_clip(c);
         return v;
@@ -371,7 +363,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
         FILE* fh = open_utf8_filename(vfr, "r");
 
         if (!fh) {
-            sprintf(e, "AssRender: could not read timecodes file '%s'", vfr);
+            const char* e = avs_sprintf(env, "AssRender: could not read timecodes file '%s'", vfr);
             v = avs_new_value_error(e);
             avs_release_clip(c);
             return v;
@@ -380,7 +372,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
         data->isvfr = 1;
 
         if (fscanf(fh, "# timecode format v%d", &ver) != 1) {
-            sprintf(e, "AssRender: invalid timecodes file '%s'", vfr);
+            const char* e = avs_sprintf(env, "AssRender: invalid timecodes file '%s'", vfr);
             v = avs_new_value_error(e);
             avs_release_clip(c);
             return v;
