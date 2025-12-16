@@ -7,7 +7,7 @@
   - set PKG_CONFIG_PATH env `setx PKG_CONFIG_PATH "C:/lib/pkgconfig"`
 
 * Clone repos
-  - Clone `git clone https://github.com/seiya-dev/assrender.git`
+  - Clone `git clone https://github.com/pinterf/assrender.git`
   - and clone libass as subdirectory `cd assrender && git clone https://github.com/libass/libass.git`
 
 * Prequisite: avisynth.lib versions (x86 and x64)
@@ -30,7 +30,7 @@
 
 ### Linux
 * Clone repo
-  - git clone https://github.com/seiya-dev/assrender
+  - git clone https://github.com/pinterf/assrender
   - cd assrender
   - cmake -B build -S .
   - cmake --build build --clean-first
