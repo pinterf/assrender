@@ -81,8 +81,7 @@ Default is to use the ASS script's "YCbCr Matrix" or "Video Colorspace" property
 
 Recognized .ASS properties: "TV.601" "TV.709", "PC.601" "PC.709" "TV.240m" "PC.240m" "TV.fcc" "PC.fcc" and "none". 
 
-"none" and "guess" decides upon on video resolution: width > 1280 or height > 576 → BT.709, else → BT.601.
-When no hint found in ASS script and 'colorspace' parameter is empty then the default is BT.601.
+"none" and "guess" determine the colorspace based on the video's `_Matrix` frame property if available. Otherwise, if the resolution is width > 1024 or height > 576, BT.709 is used; otherwise BT.601.
 
 ## Build instructions
 See: [BUILD.md](BUILD.md)

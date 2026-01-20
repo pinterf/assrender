@@ -893,58 +893,122 @@ AVS_VideoFrame* AVSC_CC assrender_get_frame(AVS_FilterInfo* p, int n)
     udata* ud = (udata*)p->user_data;
     ASS_Image* img;
     AVS_VideoFrame* src;
-
+    AVS_VideoFrame* dst;
     int64_t ts;
     int changed;
 
+    // 1) Get upstream frame
     src = avs_get_frame(p->child, n);
 
-    avs_make_writable(p->env, &src);
+    // 2) Allocate a new writable destination frame
+    dst = avs_new_video_frame_a(p->env, &p->vi, AVS_FRAME_ALIGN);
+    if (!dst) {
+        avs_release_video_frame(src);
+        return 0;
+    }
 
+    // 3) Copy src -> dst (real pixel copy), then free src
+
+    if (avs_is_planar(&p->vi)) {
+        if (avs_is_rgb(&p->vi)) {
+            // Planar RGB: R, G, B planes
+            const int planes[3] = { AVS_PLANAR_R, AVS_PLANAR_G, AVS_PLANAR_B };
+            for (int i = 0; i < 3; ++i) {
+                const uint8_t* srcp = avs_get_read_ptr_p(src, planes[i]);
+                int src_pitch       = avs_get_pitch_p(src, planes[i]);
+                uint8_t* dstp       = avs_get_write_ptr_p(dst, planes[i]);
+                int dst_pitch       = avs_get_pitch_p(dst, planes[i]);
+                int row_size        = avs_get_row_size_p(src, planes[i]);
+                int height          = avs_get_height_p(src, planes[i]);
+                avs_bit_blt(p->env, dstp, dst_pitch, srcp, src_pitch, row_size, height);
+            }
+        }
+        else {
+            // Planar YUV: Y, U, V planes
+            const int planes[3] = { AVS_PLANAR_Y, AVS_PLANAR_U, AVS_PLANAR_V };
+            for (int i = 0; i < 3; ++i) {
+                const uint8_t* srcp = avs_get_read_ptr_p(src, planes[i]);
+                int src_pitch       = avs_get_pitch_p(src, planes[i]);
+                uint8_t* dstp       = avs_get_write_ptr_p(dst, planes[i]);
+                int dst_pitch       = avs_get_pitch_p(dst, planes[i]);
+                int row_size        = avs_get_row_size_p(src, planes[i]);
+                int height          = avs_get_height_p(src, planes[i]);
+                avs_bit_blt(p->env, dstp, dst_pitch, srcp, src_pitch, row_size, height);
+            }
+        }
+    }
+    else {
+        // Packed formats (e.g. RGB32, YUY2, etc.)
+        const uint8_t* srcp = avs_get_read_ptr_p(src, AVS_DEFAULT_PLANE);
+        int src_pitch       = avs_get_pitch_p(src, AVS_DEFAULT_PLANE);
+        uint8_t* dstp       = avs_get_write_ptr_p(dst, AVS_DEFAULT_PLANE);
+        int dst_pitch       = avs_get_pitch_p(dst, AVS_DEFAULT_PLANE);
+        int row_size        = avs_get_row_size_p(src, AVS_DEFAULT_PLANE);
+        int height          = avs_get_height_p(src, AVS_DEFAULT_PLANE);
+        avs_bit_blt(p->env, dstp, dst_pitch, srcp, src_pitch, row_size, height);
+    }
+
+    // Original frame no longer needed locally
+    avs_release_video_frame(src);
+
+    // 4) Compute timestamp for libass
     if (!ud->isvfr) {
-        // it’s a casting party!
+        // it's a casting party!
         ts = (int64_t)n * (int64_t)1000 * (int64_t)p->vi.fps_denominator / (int64_t)p->vi.fps_numerator;
-    } else {
+    }
+    else {
         ts = ud->timestamp[n];
     }
 
+    // 5) Render ASS
     img = ass_render_frame(ud->ass_renderer, ud->ass, ts, &changed);
 
     if (img) {
-        uint32_t height, width, pitch[2];
+        uint32_t width  = p->vi.width;
+        uint32_t height = p->vi.height;
         uint8_t* data[3];
+        uint32_t pitch[2];
 
+        // 6) Build write pointers for the copied frame (dst)
         if (avs_is_planar(&p->vi) && !ud->greyscale) {
-          if (avs_is_rgb(&p->vi)) {
-            // planar RGB as 444
-            data[0] = avs_get_write_ptr_p(src, AVS_PLANAR_R);
-            data[1] = avs_get_write_ptr_p(src, AVS_PLANAR_G);
-            data[2] = avs_get_write_ptr_p(src, AVS_PLANAR_B);
-            pitch[0] = avs_get_pitch_p(src, AVS_DEFAULT_PLANE);
-          }
-          else {
-            data[0] = avs_get_write_ptr_p(src, AVS_PLANAR_Y);
-            data[1] = avs_get_write_ptr_p(src, AVS_PLANAR_U);
-            data[2] = avs_get_write_ptr_p(src, AVS_PLANAR_V);
-            pitch[0] = avs_get_pitch_p(src, AVS_PLANAR_Y);
-            pitch[1] = avs_get_pitch_p(src, AVS_PLANAR_U);
-          }
+            if (avs_is_rgb(&p->vi)) {
+                // planar RGB as 4:4:4
+                data[0]   = avs_get_write_ptr_p(dst, AVS_PLANAR_R);
+                data[1]   = avs_get_write_ptr_p(dst, AVS_PLANAR_G);
+                data[2]   = avs_get_write_ptr_p(dst, AVS_PLANAR_B);
+                pitch[0]  = avs_get_pitch_p(dst, AVS_DEFAULT_PLANE);
+            }
+            else {
+                data[0]   = avs_get_write_ptr_p(dst, AVS_PLANAR_Y);
+                data[1]   = avs_get_write_ptr_p(dst, AVS_PLANAR_U);
+                data[2]   = avs_get_write_ptr_p(dst, AVS_PLANAR_V);
+                pitch[0]  = avs_get_pitch_p(dst, AVS_PLANAR_Y);
+                pitch[1]  = avs_get_pitch_p(dst, AVS_PLANAR_U);
+            }
         }
         else {
-          data[0] = avs_get_write_ptr_p(src, AVS_DEFAULT_PLANE);
-          pitch[0] = avs_get_pitch_p(src, AVS_DEFAULT_PLANE);
+            data[0]  = avs_get_write_ptr_p(dst, AVS_DEFAULT_PLANE);
+            pitch[0] = avs_get_pitch_p(dst, AVS_DEFAULT_PLANE);
         }
 
-        height = p->vi.height;
-        width = p->vi.width;
-
+        // 7) Rebuild cached subtitle bitmap if changed
         if (changed) {
-            memset(ud->sub_img[0], 0x00, height * width * ud->pixelsize);
-            ud->f_make_sub_img(img, ud->sub_img, width, ud->bits_per_pixel, ud->rgb_fullscale, &ud->mx);
+            memset(ud->sub_img[0], 0, height * width * ud->pixelsize);
+            ud->f_make_sub_img(
+                img,
+                ud->sub_img,
+                width,
+                ud->bits_per_pixel,
+                ud->rgb_fullscale,
+                &ud->mx
+            );
         }
 
+        // 8) Blend ASS into the copied frame
         ud->apply(ud->sub_img, data, pitch, width, height);
     }
 
-    return src;
+    // 9) Return the modified copy
+    return dst;
 }
+

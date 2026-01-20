@@ -58,13 +58,6 @@ static const char* detect_bom(const char* buf, const size_t bufsize) {
 }
 
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#else
-#include <sys/stat.h>
-#endif
-
-#ifdef _WIN32
 static wchar_t *utf8_to_utf16le(const char *data) {
     const int out_size = MultiByteToWideChar(CP_UTF8, 0, data, -1, NULL, 0);
     wchar_t *out = malloc(out_size * sizeof(wchar_t));
@@ -216,7 +209,6 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
     AVS_FilterInfo* fi;
     AVS_Clip* c = avs_new_c_filter(env, &fi, avs_array_elt(args, 0), 1);
     const AVS_VideoInfo *vi = &fi->vi;
-    char e[250];
 
     const char* f = avs_as_string(avs_array_elt(args, 1));
     const char* vfr = avs_as_string(avs_array_elt(args, 2));
@@ -318,7 +310,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
     if (!strcasecmp(strrchr(f, '.'), ".srt")) {
         FILE* fp = open_utf8_filename(f, "r");
         if (!fp) {
-            sprintf(e, "AssRender: input file '%s' does not exist or is not a regular file", f);
+            const char* e = avs_sprintf(env, "AssRender: input file '%s' does not exist or is not a regular file", f);
             v = avs_new_value_error(e);
             avs_release_clip(c);
             return v;
@@ -330,7 +322,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
 
         fp = open_utf8_filename(f, "rb");
         if (!fp) {
-            sprintf(e, "AssRender: input file '%s' does not exist or is not a regular file", f);
+            const char* e = avs_sprintf(env, "AssRender: input file '%s' does not exist or is not a regular file", f);
             v = avs_new_value_error(e);
             avs_release_clip(c);
             return v;
@@ -338,7 +330,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
 
         buf = read_file_bytes(fp, &bufsize);
         if (!buf) {
-            sprintf(e, "AssRender: unable to read '%s'", f);
+            const char* e = avs_sprintf(env, "AssRender: unable to read '%s'", f);
             v = avs_new_value_error(e);
             avs_release_clip(c);
             return v;
@@ -358,7 +350,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
     }
 
     if (!ass) {
-        sprintf(e, "AssRender: unable to parse '%s'", f);
+        const char* e = avs_sprintf(env, "AssRender: unable to parse '%s'", f);
         v = avs_new_value_error(e);
         avs_release_clip(c);
         return v;
@@ -371,7 +363,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
         FILE* fh = open_utf8_filename(vfr, "r");
 
         if (!fh) {
-            sprintf(e, "AssRender: could not read timecodes file '%s'", vfr);
+            const char* e = avs_sprintf(env, "AssRender: could not read timecodes file '%s'", vfr);
             v = avs_new_value_error(e);
             avs_release_clip(c);
             return v;
@@ -380,7 +372,7 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
         data->isvfr = 1;
 
         if (fscanf(fh, "# timecode format v%d", &ver) != 1) {
-            sprintf(e, "AssRender: invalid timecodes file '%s'", vfr);
+            const char* e = avs_sprintf(env, "AssRender: invalid timecodes file '%s'", vfr);
             v = avs_new_value_error(e);
             avs_release_clip(c);
             return v;
@@ -450,13 +442,6 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
         color_mt = MATRIX_BT2020;
       }
       else if (!strcasecmp(tmpcsp, "none") || !strcasecmp(tmpcsp, "guess")) {
-        /* not yet
-        * Theoretically only for 10 and 12 bits:
-        if (fi->vi.width > 1920 || fi->vi.height > 1080)
-          color_mt = MATRIX_BT2020;
-        else 
-        */
-
         int mt_from_props_ok = 0;
         matrix_type mt_from_props = MATRIX_NONE;
 
@@ -467,10 +452,16 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
         if (mt_from_props_ok && mt_from_props != MATRIX_NONE) {
             color_mt = mt_from_props;
         } else {
-            if (vi->width >= 1280 || vi->height >= 576) {
-                color_mt = MATRIX_PC709;
+            /* not yet
+            * Theoretically only for 10 and 12 bits:
+            if (fi->vi.width > 1920 || fi->vi.height > 1080)
+            color_mt = MATRIX_BT2020;
+            else
+            */
+            if (vi->width > 1024 || vi->height > 576) {
+                color_mt = MATRIX_BT709;
             } else {
-                color_mt = MATRIX_PC601;
+                color_mt = MATRIX_BT601;
             }
         }
       }
@@ -500,7 +491,6 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
       avs_release_clip(c);
       return v;
     }
-
 
     switch (fi->vi.pixel_type)
     {
