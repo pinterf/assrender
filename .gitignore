@@ -32,6 +32,8 @@ libass*
 testbuild.bat
 
 #*/build/.vs
+build_mingw/*
+build_ucrt/*
 build/*
 */build/Win32
 */build/x64
