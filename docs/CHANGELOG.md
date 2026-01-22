@@ -1,6 +1,8 @@
 ## Change log
 
-### 0.36.0-dev.5 (20251209)
+### 0.36.0 (20260122) (seiya-git)
+* Binaries using AviSynth 3.7.5's lib, VS2022 MSVC 14.38 toolset
+* Update build instructions
 * Fix hinting
 * Fix ass_set_storage_size not be called
 * Switch submodule build system to meson
