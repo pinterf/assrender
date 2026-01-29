@@ -5,13 +5,6 @@ on:
   pull_request:
   workflow_dispatch: #
 
-env:
-  ass_repo: https://github.com/libass/libass
-  ass_ver: 0.17.4
-  avs_repo: https://github.com/AviSynth/AviSynthPlus
-  avs_ver: 3.7.5
-  avs_date: 20250420
-
 jobs:
   build-linux:
     runs-on: ubuntu-latest
@@ -21,33 +14,11 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update && sudo apt-get install -y ninja-build nasm libfontconfig1-dev meson
-          
-          git clone ${{ env.avs_repo }}.git -b v${{ env.avs_ver }} --depth=1 avsplus
-          
-          cd ./avsplus
-          cmake -DCMAKE_INSTALL_PREFIX=/usr/local -S . -B avisynth-build 
-          cmake --build avisynth-build --config Release -j 2
-          sudo cmake --install avisynth-build --config Release
-          cd ..
-          
-          git clone ${{ env.ass_repo }}.git -b ${{ env.ass_ver }} --depth=1 libass
-          
-          cd ./libass
           meson wrap update-db
-          meson wrap install fribidi
-          meson wrap install freetype2
-          meson wrap install expat
-          meson wrap install harfbuzz
-          meson wrap install libpng
-          meson wrap install zlib
-          
-          meson setup build -Ddefault_library=static -Dbuildtype=release -Dasm=enabled -Dc_std=c11 -Dcpp_std=c++17
-          meson compile -C build
-          sudo meson install -C build
       - name: Build & Save binary
         run: |
-          cmake -B build -S .
-          cmake --build build --clean-first
+          meson setup build -Dasm=enabled
+          meson compile -C build
           cmake -E copy "build/src/libassrender.so" "dist/libassrender.so"
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -66,23 +37,7 @@ jobs:
           
           python -m pip install --upgrade pip
           pip install meson
-          
-          curl -L "${{ env.avs_repo }}/releases/download/v${{ env.avs_ver }}/AviSynthPlus_${{ env.avs_ver }}_${{ env.avs_date }}-filesonly.7z" `
-            --create-dirs -o "./avsplus/avisynthplus-latest-filesonly.7z"
-          7z e "avsplus\*-filesonly.7z" -o"lib\x86-32" "*\x86\c_api\AviSynth.lib"
-          7z e "avsplus\*-filesonly.7z" -o"lib\x86-64" "*\x64\c_api\AviSynth.lib"
-          
-          git clone ${{ env.ass_repo }}.git -b ${{ env.ass_ver }} --depth=1 libass
-          
-          cd ./libass
           meson wrap update-db
-          meson wrap install fribidi
-          meson wrap install fontconfig
-          meson wrap install freetype2
-          meson wrap install expat
-          meson wrap install harfbuzz
-          meson wrap install libpng
-          meson wrap install zlib
       - name: Setup MSVC (x64)
         uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -91,22 +46,12 @@ jobs:
         env:
           PKG_CONFIG_PATH: C:/assdeps/x64/lib/pkgconfig
         run: |
-          cd libass
           meson setup build_x64 `
             --prefix "C:/assdeps/x64" `
             --libdir "lib" `
-            -Ddefault_library=static `
-            -Dbuildtype=release `
             -Dasm=enabled `
             -Db_vscrt=static_from_buildtype `
-            -Dc_std=c11 `
-            -Dcpp_std=c++17
           meson compile -C build_x64
-          meson install -C build_x64
-          cd ..
-          
-          cmake -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -A x64 -S . -B build_x64
-          msbuild /t:Rebuild /m /p:Configuration=Release /p:Platform=x64 ".\build_x64\assrender.sln"
           cmake -E copy "build_x64\src\Release\assrender.dll" "dist\Release_x64\assrender.dll"
       - name: Setup MSVC (Win32)
         uses: ilammy/msvc-dev-cmd@v1
@@ -116,22 +61,12 @@ jobs:
         env:
           PKG_CONFIG_PATH: C:/assdeps/x86/lib/pkgconfig
         run: |
-          cd libass
           meson setup build_Win32 `
             --prefix "C:/assdeps/x86" `
             --libdir "lib" `
-            -Ddefault_library=static `
-            -Dbuildtype=release `
             -Dasm=enabled `
             -Db_vscrt=static_from_buildtype `
-            -Dc_std=c11 `
-            -Dcpp_std=c++17
           meson compile -C build_Win32
-          meson install -C build_Win32
-          cd ..
-          
-          cmake -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -A Win32 -S . -B build_Win32
-          msbuild /t:Rebuild /m /p:Configuration=Release /p:Platform=Win32 ".\build_Win32\assrender.sln"
           cmake -E copy "build_Win32\src\Release\assrender.dll" "dist\Release_Win32\assrender.dll"
       - name: Upload artifact
         uses: actions/upload-artifact@v4
