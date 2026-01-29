@@ -17,7 +17,7 @@ jobs:
           meson wrap update-db
       - name: Build & Save binary
         run: |
-          meson setup build -Dasm=enabled
+          meson setup build
           meson compile -C build
           cmake -E copy "build/src/libassrender.so" "dist/libassrender.so"
       - name: Upload artifact
@@ -49,7 +49,6 @@ jobs:
           meson setup build_x64 `
             --prefix "C:/assdeps/x64" `
             --libdir "lib" `
-            -Dasm=enabled `
             -Db_vscrt=static_from_buildtype `
           meson compile -C build_x64
           cmake -E copy "build_x64\src\Release\assrender.dll" "dist\Release_x64\assrender.dll"
@@ -64,7 +63,6 @@ jobs:
           meson setup build_Win32 `
             --prefix "C:/assdeps/x86" `
             --libdir "lib" `
-            -Dasm=enabled `
             -Db_vscrt=static_from_buildtype `
           meson compile -C build_Win32
           cmake -E copy "build_Win32\src\Release\assrender.dll" "dist\Release_Win32\assrender.dll"
