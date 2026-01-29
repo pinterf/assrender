@@ -39,6 +39,11 @@ build/*
 */build/x64
 Test
 
+# Meson
+/subprojects/*
+!/subprojects/avisynthplus.wrap
+!/subprojects/libass.wrap
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/

@@ -1,0 +1,4 @@
+[wrap-git]
+directory=avisynthplus
+url=https://github.com/AviSynth/AviSynthPlus.git
+revision=v3.7.5
