@@ -4,7 +4,6 @@ project(
     default_options: [
         'default_library=static',
         'buildtype=release',
-        'b_vscrt=static_from_buildtype',
         'c_std=c11',
         'cpp_std=c++17',
         'warning_level=3',
