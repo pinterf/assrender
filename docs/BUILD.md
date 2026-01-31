@@ -78,7 +78,7 @@ These all co-exist and mess up each other's paths and environment variables, and
 
 Open a standard CMD and run (Isolate PATH to avoid MSYS2/MinGW conflicts):
 ```cmd
-set PATH=C:\Windows\System32;C:\Windows;C:\Program Files\Meson;%LocalAppData%\Microsoft\WinGet\Links
+set PATH=C:\Windows\System32;C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows;C:\Program Files\Meson;%LocalAppData%\Microsoft\WinGet\Links;C:\Program Files\WinGet\Links
 ```
 
 And these (adjust path for your version) (default: 64-bit)
@@ -135,6 +135,7 @@ When you want non-standard choice (VS 2026 with v143 toolset with specific versi
 cd libass
 set CC=cl
 set CXX=cl
+meson wrap update-db
 meson setup build/x64 --wrap-mode=forcefallback -Ddefault_library=static -Dbuildtype=release -Dasm=enabled -Db_vscrt=static_from_buildtype -Dc_std=c11 -Dcpp_std=c++17 --prefix=C:/lib64
 meson compile -C build/x64
 meson install -C build/x64

@@ -30,6 +30,7 @@ VSNASM/
 VSYASM/
 libass*
 testbuild.bat
+run_temp_*
 
 #*/build/.vs
 build_mingw/*
