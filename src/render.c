@@ -899,56 +899,19 @@ AVS_VideoFrame* AVSC_CC assrender_get_frame(AVS_FilterInfo* p, int n)
 
     // 1) Get upstream frame
     src = avs_get_frame(p->child, n);
-
-    // 2) Allocate a new writable destination frame
-    dst = avs_new_video_frame_a(p->env, &p->vi, AVS_FRAME_ALIGN);
-    if (!dst) {
-        avs_release_video_frame(src);
+    if (!src) {
         return 0;
     }
 
-    // 3) Copy src -> dst (real pixel copy), then free src
-
-    if (avs_is_planar(&p->vi)) {
-        if (avs_is_rgb(&p->vi)) {
-            // Planar RGB: R, G, B planes
-            const int planes[3] = { AVS_PLANAR_R, AVS_PLANAR_G, AVS_PLANAR_B };
-            for (int i = 0; i < 3; ++i) {
-                const uint8_t* srcp = avs_get_read_ptr_p(src, planes[i]);
-                int src_pitch       = avs_get_pitch_p(src, planes[i]);
-                uint8_t* dstp       = avs_get_write_ptr_p(dst, planes[i]);
-                int dst_pitch       = avs_get_pitch_p(dst, planes[i]);
-                int row_size        = avs_get_row_size_p(src, planes[i]);
-                int height          = avs_get_height_p(src, planes[i]);
-                avs_bit_blt(p->env, dstp, dst_pitch, srcp, src_pitch, row_size, height);
-            }
-        }
-        else {
-            // Planar YUV: Y, U, V planes
-            const int planes[3] = { AVS_PLANAR_Y, AVS_PLANAR_U, AVS_PLANAR_V };
-            for (int i = 0; i < 3; ++i) {
-                const uint8_t* srcp = avs_get_read_ptr_p(src, planes[i]);
-                int src_pitch       = avs_get_pitch_p(src, planes[i]);
-                uint8_t* dstp       = avs_get_write_ptr_p(dst, planes[i]);
-                int dst_pitch       = avs_get_pitch_p(dst, planes[i]);
-                int row_size        = avs_get_row_size_p(src, planes[i]);
-                int height          = avs_get_height_p(src, planes[i]);
-                avs_bit_blt(p->env, dstp, dst_pitch, srcp, src_pitch, row_size, height);
-            }
-        }
+    // 2) Clone reference and make it writable (copy-on-write)
+    dst = avs_copy_video_frame(src);
+    if (!avs_make_writable(p->env, &dst)) {
+        avs_release_video_frame(src);
+        if (dst) avs_release_video_frame(dst);
+        return 0;
     }
-    else {
-        // Packed formats (e.g. RGB32, YUY2, etc.)
-        const uint8_t* srcp = avs_get_read_ptr_p(src, AVS_DEFAULT_PLANE);
-        int src_pitch       = avs_get_pitch_p(src, AVS_DEFAULT_PLANE);
-        uint8_t* dstp       = avs_get_write_ptr_p(dst, AVS_DEFAULT_PLANE);
-        int dst_pitch       = avs_get_pitch_p(dst, AVS_DEFAULT_PLANE);
-        int row_size        = avs_get_row_size_p(src, AVS_DEFAULT_PLANE);
-        int height          = avs_get_height_p(src, AVS_DEFAULT_PLANE);
-        avs_bit_blt(p->env, dstp, dst_pitch, srcp, src_pitch, row_size, height);
-    }
-
-    // Original frame no longer needed locally
+    
+    // 3) Free src
     avs_release_video_frame(src);
 
     // 4) Compute timestamp for libass
