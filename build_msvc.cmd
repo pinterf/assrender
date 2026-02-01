@@ -4,25 +4,36 @@ setlocal EnableExtensions
 :: 1. DETECT VISUAL STUDIO (with parameter hint)
 :: =====================================================================
 :: Usage (without parameter defaults to VS2022)
-:: build_msvc.bat 2022
-:: build_msvc.bat 2026
-:: build_msvc.bat 2026v143
+:: build_msvc.bat VS2022
+:: build_msvc.bat BT2022
+:: build_msvc.bat VS2026
+:: build_msvc.bat VS2026v143
 
 set "HINT=%1"
 set "VS_TOOLSET="
 
+set "BT2022_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat"
 set "VS2022_PATH=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
 set "VS2026_PATH=C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvarsall.bat"
 
-if "%HINT%"=="2026v143" goto :try_2026v143
-if "%HINT%"=="2026" goto :try_2026
-if "%HINT%"=="2022" goto :try_2022
+if "%HINT%"=="VS2026v143" goto :try_2026v143
+if "%HINT%"=="VS2026" goto :try_2026
+if "%HINT%"=="BT2022" goto :try_2022BT
+if "%HINT%"=="VS2022" goto :try_2022
 
 :try_2022
 if exist "%VS2022_PATH%" (
     set "VCVARS=%VS2022_PATH%"
     set "VS_GEN=Visual Studio 17 2022"
     echo [INFO] Selected Visual Studio 2022
+    goto :found_vs
+)
+
+:try_2022BT
+if exist "%BT2022_PATH%" (
+    set "VCVARS=%BT2022_PATH%"
+    set "VS_GEN=Visual Studio 17 2022"
+    echo [INFO] Selected Visual Studio Build Tools 2022
     goto :found_vs
 )
 
@@ -50,7 +61,7 @@ if not defined VCVARS (
 )
 
 :found_vs
-set "SAFE_PATH=C:\Windows\System32;C:\Windows;C:\Program Files\Meson;%LocalAppData%\Microsoft\WinGet\Links"
+set "SAFE_PATH=C:\Windows\System32;C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows;C:\Program Files\Meson;%LocalAppData%\Microsoft\WinGet\Links;C:\Program Files\WinGet\Links"
 
 :: 2. BUILD 64-BIT (x64)
 echo ============================================================
@@ -115,6 +126,7 @@ echo if not exist "libass" ( echo [ERROR] libass folder not found! ^& exit /b 1 
 echo cd libass >> "%TFILE%"
 echo set CC=cl >> "%TFILE%"
 echo set CXX=cl >> "%TFILE%"
+echo meson wrap update-db >> "%TFILE%"
 echo meson setup %BDIR% --wrap-mode=forcefallback -Ddefault_library=static -Dbuildtype=release -Dasm=enabled -Db_vscrt=static_from_buildtype --prefix=%PREFIX% --wipe ^|^| exit /b 1 >> "%TFILE%"
 echo meson compile -C %BDIR% ^|^| exit /b 1 >> "%TFILE%"
 echo meson install -C %BDIR% ^|^| exit /b 1 >> "%TFILE%"
