@@ -41,6 +41,7 @@ Use
 - `build_msvc.cmd VS2026v143` for a v143 toolset (VS2022-style) build on a Visual Studio 2026.
 - `build_msvc.cmd VS2026` for a v145 toolset build with Visual Studio 2026.
 - `build_msvc.cmd VS2022` for a v143 toolset build with Visual Studio 2022 Community.
+- `build_msvc.cmd BT2022` for Microsoft Visual Studio 2022 Build Tools
 
 It will create both the 32 and 64 bit assrender.dll files and the Visual Studio solution files as well.
 If it does not work, go on with our detailed description.
@@ -99,6 +100,10 @@ And these (adjust path for your version) (default: 64-bit)
 
     `call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars32.bat"`
 
+- For Visual Studio 2022 Build Tools:
+
+    `call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat"`
+
 **Optional: check environment, verify tools**
 
   Issue commands:
@@ -135,7 +140,6 @@ When you want non-standard choice (VS 2026 with v143 toolset with specific versi
 cd libass
 set CC=cl
 set CXX=cl
-meson wrap update-db
 meson setup build/x64 --wrap-mode=forcefallback -Ddefault_library=static -Dbuildtype=release -Dasm=enabled -Db_vscrt=static_from_buildtype -Dc_std=c11 -Dcpp_std=c++17 --prefix=C:/lib64
 meson compile -C build/x64
 meson install -C build/x64
