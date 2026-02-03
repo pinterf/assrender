@@ -1,5 +1,10 @@
 ## Change log
 
+### 0.37.0 (20260203)
+* add MSBUILD hint to build_msvc helper
+* fix #52: regression: frame properties were not passed
+  (Revert "Work with frame copy instead of just modifying it")
+
 ### 0.36.0 (20260122) (seiya-git)
 * Binaries using AviSynth 3.7.5's lib, VS2022 MSVC 14.38 toolset
 * Update build instructions
