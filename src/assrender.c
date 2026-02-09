@@ -345,7 +345,6 @@ AVS_Value AVSC_CC assrender_create(AVS_ScriptEnvironment* env, AVS_Value args,
         fp = open_utf8_filename(f, "r");
         if (fp) {
             ass_read_matrix(fp, tmpcsp);
-            fclose(fp);
         }
     }
 
